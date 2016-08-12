@@ -1,0 +1,194 @@
+cd-info version 0.93 x86_64-unknown-linux-gnu
+Copyright (c) 2003-2005, 2007-2008, 2011-2013 R. Bernstein
+This is free software; see the source for copying conditions.
+There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.
+CD location   : /dev/cdrom
+CD driver name: GNU/Linux
+   access mode: IOCTL
+
+Vendor                      : HL-DT-ST
+Model                       : DVDRAM GH70N    
+Revision                    : UGA0
+Hardware                                  : CD-ROM or DVD
+Can eject                                 : Yes
+Can close tray                            : Yes
+Can disable manual eject                  : Yes
+Can select juke-box disc                  : No
+
+Can set drive speed                       : No
+Can read multiple sessions (e.g. PhotoCD) : Yes
+Can hard reset device                     : Yes
+
+Reading....
+  Can read Mode 2 Form 1                  : Yes
+  Can read Mode 2 Form 2                  : Yes
+  Can read (S)VCD (i.e. Mode 2 Form 1/2)  : Yes
+  Can read C2 Errors                      : Yes
+  Can read IRSC                           : Yes
+  Can read Media Channel Number (or UPC)  : Yes
+  Can play audio                          : Yes
+  Can read CD-DA                          : Yes
+  Can read CD-R                           : Yes
+  Can read CD-RW                          : Yes
+  Can read DVD-ROM                        : Yes
+
+Writing....
+  Can write CD-RW                         : Yes
+  Can write DVD-R                         : Yes
+  Can write DVD-RAM                       : Yes
+  Can write DVD-RW                        : No
+  Can write DVD+RW                        : No
+__________________________________
+
+Disc mode is listed as: CD-DA
+CD-ROM Track List (1 - 11)
+  #: MSF       LSN    Type   Green? Copy? Channels Premphasis?
+  1: 00:02:00  000000 audio  false  no    2        no
+  2: 03:35:40  016015 audio  false  no    2        no
+  3: 06:39:40  029815 audio  false  no    2        no
+  4: 09:29:05  042530 audio  false  no    2        no
+  5: 13:20:18  059868 audio  false  no    2        no
+  6: 16:46:26  075326 audio  false  no    2        no
+  7: 20:38:71  092771 audio  false  no    2        no
+  8: 24:30:73  110173 audio  false  no    2        no
+  9: 27:19:17  122792 audio  false  no    2        no
+ 10: 30:09:04  135529 audio  false  no    2        no
+ 11: 33:18:72  149772 audio  false  no    2        no
+170: 38:03:24  171099 leadout (383 MB raw, 383 MB formatted)
+Media Catalog Number (MCN): 0093624980605
+TRACK  1 ISRC: USWB10901115
+TRACK  2 ISRC: USWB10901087
+TRACK  3 ISRC: USWB10901551
+TRACK  4 ISRC: USWB10901552
+TRACK  5 ISRC: USWB10901553
+TRACK  6 ISRC: USWB10901554
+TRACK  7 ISRC: USWB10901555
+TRACK  8 ISRC: USWB10901556
+TRACK  9 ISRC: USWB10901116
+TRACK 10 ISRC: USWB10808907
+TRACK 11 ISRC: USWB10901557
+Last CD Session LSN: 0
+audio status: no status
+volume level port 0: 255 (0..255) 100 (0..100)
+volume level port 1: 255 (0..255) 100 (0..100)
+volume level port 2:   0 (0..255)   0 (0..100)
+volume level port 3:   0 (0..255)   0 (0..100)
+__________________________________
+CD Analysis Report
+Audio CD, CDDB disc ID is 9c08e90b
+cd-info: Found 1 matches in CDDB
+Disc ID: 9c08e90b
+CDDB category: data (0)
+Music genre: 'PopRock'
+Year: 2009
+Artist: 'Taking Back Sunday'
+Title: 'New Again'
+Extended data: 'NULL'
+Length: 2283 seconds
+Revision: 0
+Number of tracks: 11
+  Track  1
+    number: 1
+    frame offset: 150
+    length: 213 seconds
+    artist: 'Taking Back Sunday'
+    title: 'New Again'
+    extended data: 'NULL'
+  Track  2
+    number: 2
+    frame offset: 16165
+    length: 184 seconds
+    artist: 'Taking Back Sunday'
+    title: 'Sink Into Me'
+    extended data: 'NULL'
+  Track  3
+    number: 3
+    frame offset: 29965
+    length: 169 seconds
+    artist: 'Taking Back Sunday'
+    title: 'Lonely, Lonely'
+    extended data: 'NULL'
+  Track  4
+    number: 4
+    frame offset: 42680
+    length: 231 seconds
+    artist: 'Taking Back Sunday'
+    title: 'Summer, Man'
+    extended data: 'NULL'
+  Track  5
+    number: 5
+    frame offset: 60018
+    length: 206 seconds
+    artist: 'Taking Back Sunday'
+    title: 'Swing'
+    extended data: 'NULL'
+  Track  6
+    number: 6
+    frame offset: 75476
+    length: 232 seconds
+    artist: 'Taking Back Sunday'
+    title: 'Where My Mouth Is'
+    extended data: 'NULL'
+  Track  7
+    number: 7
+    frame offset: 92921
+    length: 232 seconds
+    artist: 'Taking Back Sunday'
+    title: 'Cut Me Up Jenny'
+    extended data: 'NULL'
+  Track  8
+    number: 8
+    frame offset: 110323
+    length: 168 seconds
+    artist: 'Taking Back Sunday'
+    title: 'Catholic Knees'
+    extended data: 'NULL'
+  Track  9
+    number: 9
+    frame offset: 122942
+    length: 169 seconds
+    artist: 'Taking Back Sunday'
+    title: 'Capital M-E'
+    extended data: 'NULL'
+  Track 10
+    number: 10
+    frame offset: 135679
+    length: 189 seconds
+    artist: 'Taking Back Sunday'
+    title: 'Carpathia'
+    extended data: 'NULL'
+  Track 11
+    number: 11
+    frame offset: 149922
+    length: 285 seconds
+    artist: 'Taking Back Sunday'
+    title: 'Everything Must Go'
+    extended data: 'NULL'
+
+Language 0 'English':
+CD-TEXT for Disc:
+	TITLE: NEW AGAIN
+	PERFORMER: TAKING BACK SUNDAY
+CD-TEXT for Track  1:
+	TITLE: NEW AGAIN - TAKING BACK SUNDAY
+CD-TEXT for Track  2:
+	TITLE: SINK INTO ME - TAKING BACK SUNDAY
+CD-TEXT for Track  3:
+	TITLE: LONELY, LONELY - TAKING BACK SUNDAY
+CD-TEXT for Track  4:
+	TITLE: SUMMER, MAN - TAKING BACK SUNDAY
+CD-TEXT for Track  5:
+	TITLE: SWING - TAKING BACK SUNDAY
+CD-TEXT for Track  6:
+	TITLE: WHERE MY MOUTH IS - TAKING BACK SUNDAY
+CD-TEXT for Track  7:
+	TITLE: CUT ME UP JENNY - TAKING BACK SUNDAY
+CD-TEXT for Track  8:
+	TITLE: CATHOLIC KNEES - TAKING BACK SUNDAY
+CD-TEXT for Track  9:
+	TITLE: CAPITAL M-E - TAKING BACK SUNDAY
+CD-TEXT for Track 10:
+	TITLE: CARPATHIA - TAKING BACK SUNDAY
+CD-TEXT for Track 11:
+	TITLE: EVERYTHING MUST GO - TAKING BACK SUNDAY
