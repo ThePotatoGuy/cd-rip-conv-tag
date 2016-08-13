@@ -28,7 +28,18 @@ EMAIL = 'andreponce@null.net'
 PARSE_OUTPUT_FAILED = 'The {0:s} program did not produce the required output. \nPlease send an email to '+EMAIL+' with the version number of this program and the name and version number of {0:s}.'
 NEWLINE = '\n'
 
-###	program names/commands	============================================
+##	program flow control constants	------------------------------------
+
+SKIP_PROGRAM_TEST = True
+SKIP_CD_INFO = False
+SKIP_CD_PARA = True
+SKIP_FFMPEG = True
+
+########################################################################
+###	initial test if program exists	####################################
+########################################################################
+
+###	program names/commands	--------------------------------------------
 
 CMD_CD_INFO = 'cd-info'
 CMD_CDPARA = 'cdparanoia'
@@ -40,27 +51,35 @@ CMDS = (CMD_CD_INFO, CMD_CDPARA, CMD_FFMPEG)
 
 CMD_ERROR = 'ERROR: {:s} not found'
 
-###	initial test if program exists	====================================
-print('Checking if required programs exist...')
+###	program testing functions	========================================
+def checkProgram():
+	for cmd in CMDS:
+		try:
+			cmd_list = list()
+			cmd_list.append(cmd)
+			
+			if cmd != CMD_FFMPEG: 
+				# cd-info and cdparanoia need version flag
+				cmd_list.append(CMD_VERSION)
+				
+			subprocess.run(cmd_list, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+				
+		except FileNotFoundError:
+			print(CMD_ERROR.format(cmd))
+			print(EXITING)
+			exit(1)
 
-for cmd in CMDS:
-	try:
-		cmd_list = list()
-		cmd_list.append(cmd)
-		
-		if cmd != CMD_FFMPEG: 
-			# cd-info and cdparanoia need version flag
-			cmd_list.append(CMD_VERSION)
-			
-		subprocess.run(cmd_list, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-			
-	except FileNotFoundError:
-		print(CMD_ERROR.format(cmd))
-		print(EXITING)
-		exit(1)
+### begin program testing flow	----------------------------------------
+
+if SKIP_PROGRAM_TEST:
+	print('Skipping required program check')
+else:
+	print('Checking if required programs exist...')
+	checkProgram()
 	
-###	pull tags if possible using cd-info	================================
-print('Getting tag data from disc...')
+########################################################################
+###	pull tags if possible using cd-info	################################
+########################################################################
 
 ### cd-info constants	------------------------------------------------
 
@@ -109,6 +128,7 @@ def displayUserTagMenu(cddb_list, cd_text_list):
 # tags.
 # @param cddb_text	- cd-info's CDDB output
 # @returns true if we have a cddb match, false otherwise
+# TODO change this to use parseCDDBKey
 def hasCDDB(cddb_text):
 	cddb_text_as_lines = cddb_text.splitlines()
 	
@@ -194,10 +214,20 @@ def parseCDTEXT(cd_text):
 def printTagTuples(tag_tups):
 	print('nothing here yet')
 
-###	end cd-info functions	--------------------------------------------
 
 
+# The following code tests the parsing of cd-info ouptut
 
+test_output = open('cd-info-sample-output','r')
+
+test_results = parseCDDBAlbumArtist(test_output.read())
+
+print(test_results)
+
+
+""" # The following code actually does the cmd call
+
+print('Getting tag data from disc...')
 # call the cd-info cmd
 cd_info_output_split = subprocess.run([CMD_CD_INFO,CMD_CD_INFO_FLAG_NO_DEV_INFO,CMD_CD_INFO_FLAG_NO_DISC_MODE], stdout=subprocess.PIPE, universal_newlines=True).stdout.partition(STDOUT_CD_INFO_CDDB_START)
 
@@ -223,7 +253,7 @@ if not cd_text_text:
 	
 ## display menu to allow user to select tags
 song_tags = displayUserTagMenu(cddb_list,cd_text_list)
-
+"""
 
 
 
