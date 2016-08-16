@@ -117,6 +117,9 @@ STDOUT_CD_INFO_CDDB_START = 'CD Analysis Report'
 # CDDB specific constants
 CDDB_ALBUM_ARTIST = 'Artist:'
 CDDB_ALBUM_TITLE = 'Title:'
+CDDB_TRACK_ARTIST = 'artist:'
+CDDB_TRACK_TITLE = 'title:'
+CDDB_TRACK_BEGIN = 'Number of tracks:'
 
 # CD-TEXT specific constants
 
@@ -211,6 +214,16 @@ def parseCDDBKey(cddb_text, key, start=0):
 	
 	return (entry,key_index,key_end_index)
 	
+# function to parse a track artist from CDDB
+# @param cddb_text	- cd-infpo's CDDB output
+# @param start		- the starting index to search for album title
+# @returns tuple consisting of:
+#	- track artist
+#	- starting index of the track artist line
+#	- ending index of the track artist line
+def parseCDDBTrackArtist(cddb_text, start=0):
+	return parseCDDBKey(cddb_text, CDDB_TRACK_ARTIST, start)
+	
 # function to parse the tracks from CDDB
 # @param cddb_text	- cd-info's CDDB output
 # @param start		- the starting index to search for tracks
@@ -220,6 +233,16 @@ def parseCDDBKey(cddb_text, key, start=0):
 #	- boolean where true means multiple artists, false means one artist
 def parseCDDBTracks(cddb_text, start=0):
 	print('nothing here yet')
+
+# function to parse a track title from CDDB
+# @param cddb_test	- cd-info's CDDB output
+# @param start		- the starting index to search for track title
+# @returns tuple consisting of:
+#	- track title
+#	- starting index of the track title line
+#	- ending index of the track title line
+def parseCDDBTrackTitle(cddb_text, start=0):
+	return parseCDDBKey(cddb_text, CDDB_TRACK_TITLE, start)
 
 # function to parse tags from CD-TEXT
 # @param cd_text	- cd-info's CD-TEXT output
@@ -253,8 +276,8 @@ def printTagTuples(tag_tups):
 test_output = open('cd-info-sample-output','r')
 test_output_text = test_output.read()
 
-test_results = parseCDDBAlbumArtist(test_output_text)
-test_results_2 = parseCDDBAlbumTitle(test_output_text)
+test_results = parseCDDBTrackArtist(test_output_text)
+test_results_2 = parseCDDBTrackTitle(test_output_text)
 
 print(test_results)
 print(test_results_2)
