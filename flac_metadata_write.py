@@ -41,6 +41,25 @@ SKIP_CD_PARA = True
 SKIP_FFMPEG = True
 
 ########################################################################
+###	CLASSES	############################################################
+########################################################################
+
+## struct style object to hold album data
+class AlbumData:
+	# album data
+	album_artist = 'Unknown'
+	album_title = 'Untitled'
+	number_of_tracks = 0
+	
+	# track data
+	track_names = list()
+	track_artists = list() # only used if has_multiple_artists is true
+	
+	# boolean to say if this album has multiple artists or not
+	# (i.e: different tracks have different artists (various artists)
+	has_multiple_artists = False
+
+########################################################################
 ###	initial tests if program exists	####################################
 ########################################################################
 
@@ -163,7 +182,7 @@ def parseCDDBAlbumArtist(cddb_text, start=0):
 	
 # function to parse the album title from CDDB
 # @param cddb_text	- cd-info's CDDB output
-# @param start		0 the starting index to search for album title
+# @param start		- the starting index to search for album title
 # @returns tuple consisting of:
 #	- album title
 #	- starting index of the album title line
@@ -191,6 +210,16 @@ def parseCDDBKey(cddb_text, key, start=0):
 	entry = cddb_text[key_index+len(key):key_end_index].strip().strip("\'")
 	
 	return (entry,key_index,key_end_index)
+	
+# function to parse the tracks from CDDB
+# @param cddb_text	- cd-info's CDDB output
+# @param start		- the starting index to search for tracks
+# @returns tuple consisting of
+#	- list of track names
+#	- list of track artists
+#	- boolean where true means multiple artists, false means one artist
+def parseCDDBTracks(cddb_text, start=0):
+	print('nothing here yet')
 
 # function to parse tags from CD-TEXT
 # @param cd_text	- cd-info's CD-TEXT output
