@@ -28,7 +28,12 @@ EMAIL = 'andreponce@null.net'
 PARSE_OUTPUT_FAILED = 'The {0:s} program did not produce the required output. \nPlease send an email to '+EMAIL+' with the version number of this program and the name and version number of {0:s}.'
 NEWLINE = '\n'
 
-##	program flow control constants	------------------------------------
+###	Formatting Constants	============================================
+
+# initalize user prompt formatting
+HEADER_BAR = '----------------------------'
+
+##	program flow control constants	====================================
 
 SKIP_PROGRAM_TEST = True
 SKIP_CD_INFO = False
@@ -36,10 +41,10 @@ SKIP_CD_PARA = True
 SKIP_FFMPEG = True
 
 ########################################################################
-###	initial test if program exists	####################################
+###	initial tests if program exists	####################################
 ########################################################################
 
-###	program names/commands	--------------------------------------------
+###	program names/commands	============================================
 
 CMD_CD_INFO = 'cd-info'
 CMD_CDPARA = 'cdparanoia'
@@ -69,7 +74,7 @@ def checkProgram():
 			print(EXITING)
 			exit(1)
 
-### begin program testing flow	----------------------------------------
+### begin program testing flow	========================================
 
 if SKIP_PROGRAM_TEST:
 	print('Skipping required program check')
@@ -81,7 +86,7 @@ else:
 ###	pull tags if possible using cd-info	################################
 ########################################################################
 
-### cd-info constants	------------------------------------------------
+### cd-info constants	================================================
 
 # cd-info specific flags
 CMD_CD_INFO_FLAG_NO_DEV_INFO = '--no-device-info'
@@ -90,16 +95,13 @@ CMD_CD_INFO_FLAG_NO_DISC_MODE = '--no-disc-mode'
 # cd-info keywords
 STDOUT_CD_INFO_CDDB_START = 'CD Analysis Report'
 
-# initalize user prompt formatting
-HEADER_BAR = '----------------------------'
-
 # CDDB specific constants
 CDDB_ALBUM_ARTIST = 'Artist:'
 CDDB_ALBUM_TITLE = 'Title:'
 
 # CD-TEXT specific constants
 
-###	cd-info functions	------------------------------------------------
+###	cd-info functions	================================================
 
 # function to prompt and ask them if they would like to use the 
 # displayed tags.
@@ -112,7 +114,7 @@ def confirmUserTagSelection():
 	user_answer = input('Do you want to use these tags? (Y/n/q)')
 	if user_answer.casefold() == 'n': # no
 		return -1
-	elif user_answer.casefold() == 'q' # quit
+	elif user_answer.casefold() == 'q': # quit
 		return 1
 	# else assume user accepts
 	return 0
@@ -157,7 +159,7 @@ def parseCDDB(cddb_text):
 #	- starting index of the album artist line
 #	- ending index of the album artist line
 def parseCDDBAlbumArtist(cddb_text, start=0):
-	return parseCDDBKey(cddb_text, start, CDDB_ALBUM_ARTIST)
+	return parseCDDBKey(cddb_text, CDDB_ALBUM_ARTIST, start)
 	
 # function to parse the album title from CDDB
 # @param cddb_text	- cd-info's CDDB output
@@ -167,25 +169,26 @@ def parseCDDBAlbumArtist(cddb_text, start=0):
 #	- starting index of the album title line
 #	- ending index of the album title line
 def parseCDDBAlbumTitle(cddb_text, start=0):
-	return parseCDDBKey(cddb_text, start, CDDB_ALBUM_TITLE)
+	return parseCDDBKey(cddb_text, CDDB_ALBUM_TITLE, start)
 	
 # function to parse a key from the CDDB
 # @param cddb_text	- cd-info's CDDB output
-# @param start		- the starting index to search for album artist
 # @param key		- the choice of data to find
+# @param start		- the starting index to search for album artist
 # @returns tuple consisting of:
 #	- entry
 #	- starting index of the entry line
 #	- ending index of the entry line
-def parseCDDBKey(cddb_text, start=0, key):
+def parseCDDBKey(cddb_text, key, start=0):
 	
 	# retrieve the line that has the key
 	key_index = cddb_text.find(key,start)
 	key_end_index = cddb_text.find(NEWLINE,key_index+len(key))
+	#print(str(key_index)+":"+str(key_end_index)+":"+str(len(key)))
 	
 	# cutout the data from that key and strip the surrounding single
 	# quotes
-	entry = cddb_text[key_index+len(key),key_end_index].strip().strip("\'")
+	entry = cddb_text[key_index+len(key):key_end_index].strip().strip("\'")
 	
 	return (entry,key_index,key_end_index)
 
@@ -214,15 +217,18 @@ def parseCDTEXT(cd_text):
 def printTagTuples(tag_tups):
 	print('nothing here yet')
 
-
+###	begin cd-info program flow	========================================
 
 # The following code tests the parsing of cd-info ouptut
 
 test_output = open('cd-info-sample-output','r')
+test_output_text = test_output.read()
 
-test_results = parseCDDBAlbumArtist(test_output.read())
+test_results = parseCDDBAlbumArtist(test_output_text)
+test_results_2 = parseCDDBAlbumTitle(test_output_text)
 
 print(test_results)
+print(test_results_2)
 
 
 """ # The following code actually does the cmd call
