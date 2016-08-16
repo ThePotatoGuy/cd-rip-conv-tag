@@ -125,6 +125,18 @@ CDDB_TRACK_BEGIN = 'Number of tracks:'
 
 ###	cd-info functions	================================================
 
+# function to check if every element in the given list is the same
+# @param _list	- the list to check
+# @return True if every element is the same, False if not
+def isEveryElementTheSame(_list):
+	element = _list[0]
+	
+	for item in _list:
+		if element != item:
+			return False
+			
+	return True
+
 # function to prompt and ask them if they would like to use the 
 # displayed tags.
 # @returns:
@@ -232,7 +244,21 @@ def parseCDDBTrackArtist(cddb_text, start=0):
 #	- list of track artists
 #	- boolean where true means multiple artists, false means one artist
 def parseCDDBTracks(cddb_text, start=0):
-	print('nothing here yet')
+	track_data = parseCDDBKey(cddb_text, CDDB_TRACK_BEGIN, start)
+	track_count = int(track_data[0])
+	
+	# parse through the CDDB text, finding tracks
+	starting_point = track_data[2]
+	track_artists = list()
+	track_titles = list()
+	for track in range(0,track_count):
+		found_artist = parseCDDBTrackArtist(cddb_text,starting_point)
+		found_title = parseCDDBTrackTitle(cddb_text,starting_point)
+		track_artists.append(found_artist[0])
+		track_titles.append(found_title[0])
+		starting_point = found_title[2]
+		
+	return (track_titles, track_artists, (not isEveryElementTheSame(track_artists)))
 
 # function to parse a track title from CDDB
 # @param cddb_test	- cd-info's CDDB output
@@ -276,11 +302,9 @@ def printTagTuples(tag_tups):
 test_output = open('cd-info-sample-output','r')
 test_output_text = test_output.read()
 
-test_results = parseCDDBTrackArtist(test_output_text)
-test_results_2 = parseCDDBTrackTitle(test_output_text)
+test_results = parseCDDBTracks(test_output_text)
 
 print(test_results)
-print(test_results_2)
 
 
 """ # The following code actually does the cmd call
