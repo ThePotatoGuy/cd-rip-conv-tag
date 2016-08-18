@@ -58,6 +58,24 @@ class AlbumData:
 	# boolean to say if this album has multiple artists or not
 	# (i.e: different tracks have different artists (various artists)
 	has_multiple_artists = False
+	
+	# function to print the data stored in this class in a nice format
+	def printData(self):
+		# print album
+		print("Album title: "+self.album_title)
+		print("Album artist: "+self.album_artist)
+		print("Number of tracks: "+str(self.number_of_tracks))
+		
+		# print tracks
+		for track_number in range(0,self.number_of_tracks):
+			print("Track "+str(track_number+1)+": ",end="")
+			
+			if(self.has_multiple_artists):
+				print(self.track_artists[track_number],end="")
+			else:
+				print(self.album_artist,end="")
+				
+			print(" - "+self.track_names[track_number])
 
 ########################################################################
 ###	initial tests if program exists	####################################
@@ -157,6 +175,7 @@ def confirmUserTagSelection():
 # @param cddb_list		- the tuple data returned from parseCDDB
 # @param cd_text_list	- the tuple data returned from parseCDTEXT
 # @returns the selected tags or None if none were selected
+# TODO
 def displayUserTagMenu(cddb_list, cd_text_list):
 	print('nothing here yet')
 
@@ -180,10 +199,26 @@ def hasCDDB(cddb_text):
 
 # function to parse tags from CDDB
 # @param cddb_text	- cd-info's CDDB output
-# @returns list of tuples where the first tuple is (album_name, artist)
-# 	and all following tuples consist of (track_name, artist)
+# @returns an AlbumData built from the CDDB output
 def parseCDDB(cddb_text):
-	print('nothing here yet')
+	album = AlbumData()
+	
+	# begin parsing the individual parts
+	# after parsing a part, we need the end index to begin search for
+	# the next part
+	retrieved_data = parseCDDBAlbumArtist(cddb_text)
+	album.album_artist = retrieved_data[0]
+	
+	retrieved_data = parseCDDBAlbumTitle(cddb_text,retrieved_data[2])
+	album.album_title = retrieved_data[0]
+	
+	retrieved_data = parseCDDBTracks(cddb_text, retrieved_data[2])
+	album.track_names = retrieved_data[0]
+	album.track_artists = retrieved_data[1]
+	album.has_multiple_artists = retrieved_data[2]
+	album.number_of_tracks = len(album.track_names)
+	
+	return album
 	
 # function to parse the album artist from CDDB
 # @param cddb_text	- cd-info's CDDB output
@@ -285,14 +320,8 @@ def parseCDDBTrackTitle(cddb_text, start=0):
 #	for the album title.
 #	- if the CD-TEXT for Disc is missing PERFORMER, "UNKNOWN" will be
 #	used for the album artist.
+# TODO: write this method
 def parseCDTEXT(cd_text):
-	print('nothing here yet')
-	
-# function to print the tuple data returned from the above parsing
-# methods
-# @param tag_tups	- the tuple data returned from the above parse 
-# methods
-def printTagTuples(tag_tups):
 	print('nothing here yet')
 
 ###	begin cd-info program flow	========================================
@@ -302,9 +331,9 @@ def printTagTuples(tag_tups):
 test_output = open('cd-info-sample-output','r')
 test_output_text = test_output.read()
 
-test_results = parseCDDBTracks(test_output_text)
+test_results = parseCDDB(test_output_text)
 
-print(test_results)
+test_results.printData()
 
 
 """ # The following code actually does the cmd call
