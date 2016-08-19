@@ -385,13 +385,13 @@ def parseCDTEXTKey(cd_text, key, start=0, end=-1):
 	if end < 0:
 		end = len(cd_text)
 	# retrieve the line that has the key
-	key_index = cddb_text.find(key,start,end)
+	key_index = cd_text.find(key,start,end)
 	if key_index >= 0:
-		key_end_index = cddb_text.find(NEWLINE,key_index+len(key),end)
+		key_end_index = cd_text.find(NEWLINE,key_index+len(key),end)
 	
 		# cutout the data from that key and strip the surrounding single
 		# quotes
-		entry = cddb_text[key_index+len(key):key_end_index].strip().strip("\'")
+		entry = cd_text[key_index+len(key):key_end_index].strip().strip("\'")
 	
 		return (entry,key_index,key_end_index)
 		
@@ -432,11 +432,8 @@ def parseCDTEXTTracks(cd_text, start=0):
 
 test_output = open('cd-info-sample-output','r')
 test_output_text = test_output.read()
-if hasCDDB(test_output_text):
-	print("pokay")
-test_results = parseCDDB(test_output_text)
-
-test_results.printData()
+test_results = parseCDTEXTDisc(test_output_text)
+print(test_results)
 
 
 """ # The following code actually does the cmd call
