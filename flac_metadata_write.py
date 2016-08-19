@@ -410,7 +410,33 @@ def parseCDTEXTKey(cd_text, key, start=0, end=-1):
 #	- ending index of the track data section
 # TODO
 def parseCDTEXTTrack(cd_text, track_number, start=0):
-	print('nothing here yet')
+	# retreive track begin and end index
+	track_data_begin = parseCDTEXTKey(cd_text,CD_TEXT_NAME,start)
+	track_data_end = parseCDTEXTKey(cd_text,CD_TEXT_NAME,track_data_begin[2])
+	is_last_section = isEveryElementMinusOne(track_data_end)
+	
+	track_data_begin_index = track_data_begin[2]
+	track_data_end_index = track_data_end[1]
+	if is_last_section:
+		track_data_end_index = len(cd_text)
+	
+	# retrieve track data
+	track_title_data = parseCDTEXTKey(cd_text,CD_TEXT_TITLE,track_data_begin_index,track_data_end_index)
+	track_artist_data = parseCDTEXTKey(cd_text,CD_TEXT_ARTIST,track_data_begin_index,track_data_end_index)
+	
+	# decide which datas are there or not
+	track_title = ''
+	track_artist = ''
+	if isEveryElementMinusOne(track_title_data):
+		track_title = CD_TEXT_TRK.format(track_number)
+	else:
+		track_title = track_title_data[0]
+	if isEveryElementMinusOne(track_artist_data):
+		track_artist = CD_TEXT_UNK
+	else:
+		track_artist = track_artist_data[0]
+		
+	return (track_title,track_artist,track_data_begin_index,track_data_end_index)
 	
 # function to parse Track tags from CD-TEXT
 # @param cd_text	- cd-info's CD-TEXT output
@@ -432,7 +458,7 @@ def parseCDTEXTTracks(cd_text, start=0):
 
 test_output = open('cd-info-sample-output','r')
 test_output_text = test_output.read()
-test_results = parseCDTEXTDisc(test_output_text)
+test_results = parseCDTEXTTrack(test_output_text,1,5190)
 print(test_results)
 
 
