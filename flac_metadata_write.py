@@ -155,9 +155,7 @@ CD_TEXT_TRK = 'TRACK {:02d}'
 # @param _list	- the list to check
 # @return True if every element is -1, False if not
 def isEveryElementMinusOne(_list):
-	if _list[0] == -1:
-		return isEveryElementTheSame(_list)
-	return False
+	return isEveryElementThisElement(_list,-1)
 
 # function to check if every element in the given list is the same
 # ASSUMES the given list has at least 1 element
@@ -171,6 +169,17 @@ def isEveryElementTheSame(_list):
 			return False
 			
 	return True
+
+# function to check if every element in the given list is the same 
+# as the given item
+# ASSUMES the given list has at least 1 element
+# @param _list	- the list to check
+# @param item	- the item to check if _list is same
+# @returns True if every element in _list is item, False if not
+def isEveryElementThisElement(_list, item):
+	if _list[0] == item:
+		return isEveryElementTheSame(_list)
+	return False
 
 # function to prompt and ask them if they would like to use the 
 # displayed tags.
@@ -408,7 +417,6 @@ def parseCDTEXTKey(cd_text, key, start=0, end=-1):
 #		-- will be "UNKNOWN" if PERFORMER not found
 #	- starting index of the track data section
 #	- ending index of the track data section
-# TODO
 def parseCDTEXTTrack(cd_text, track_number, start=0):
 	# retreive track begin and end index
 	track_data_begin = parseCDTEXTKey(cd_text,CD_TEXT_NAME,start)
@@ -450,7 +458,20 @@ def parseCDTEXTTrack(cd_text, track_number, start=0):
 #		-- if all PERFORMER is "UNKNOWN", this will be False
 # TODO
 def parseCDTEXTTracks(cd_text, start=0):
-	print('nothing here yet')
+	starting_point = start
+	track_titles = list()
+	track_artists = list()
+	track_count = 1
+	
+	# continue parsing tracks until no more tracks left
+	while starting_point < len(cd_text):
+		track_found = parseCDTEXTTrack(cd_text, track_count, starting_point)
+		track_titles.append(track_found[0])
+		track_artists.append(track_found[1])
+		starting_point = track_found[3]
+		track_count += 1
+		
+	return (track_titles,track_artists,(not isEveryElementTheSame(track_artists)))
 
 ###	begin cd-info program flow	========================================
 
@@ -458,7 +479,7 @@ def parseCDTEXTTracks(cd_text, start=0):
 
 test_output = open('cd-info-sample-output','r')
 test_output_text = test_output.read()
-test_results = parseCDTEXTTrack(test_output_text,1,5190)
+test_results = parseCDTEXTTracks(test_output_text,5190)
 print(test_results)
 
 
