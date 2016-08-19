@@ -140,10 +140,27 @@ CDDB_TRACK_TITLE = 'title:'
 CDDB_TRACK_BEGIN = 'Number of tracks:'
 
 # CD-TEXT specific constants
+CD_TEXT_NAME = 'CD-TEXT'
+CD_TEXT_TITLE = 'TITLE:'
+CD_TEXT_ARTIST = 'PERFORMER:'
+CD_TEXT_DISC = 'Disc:'
+CD_TEXT_UNT = 'UNTITLED'
+CD_TEXT_UNK = 'UNKNOWN'
+CD_TEXT_TRK = 'TRACK {:02d}'
 
 ###	cd-info functions	================================================
 
+# function to check if every element in the given list is a -1
+# ASSUMES the given list has at least 1 element
+# @param _list	- the list to check
+# @return True if every element is -1, False if not
+def isEveryElementMinusOne(_list):
+	if _list[0] == -1:
+		return isEveryElementTheSame(_list)
+	return False
+
 # function to check if every element in the given list is the same
+# ASSUMES the given list has at least 1 element
 # @param _list	- the list to check
 # @return True if every element is the same, False if not
 def isEveryElementTheSame(_list):
@@ -183,19 +200,13 @@ def displayUserTagMenu(cddb_list, cd_text_list):
 # tags.
 # @param cddb_text	- cd-info's CDDB output
 # @returns true if we have a cddb match, false otherwise
-# TODO change this to use parseCDDBKey
 def hasCDDB(cddb_text):
-	cddb_text_as_lines = cddb_text.splitlines()
-	
-	for line in cddb_text_as_lines:
-		if CMD_CD_INFO+':' in line:
-			# spliting the line by spaces helps us check the number of
-			# matches. When the third token is a 0, then we have no
-			# matches, otherwise we have at least 1
-			tokens = line.split()
-			return tokens[2] != str(0)
-				
-	return False
+	CDDB_start = parseCDDBKey(cddb_text, CMD_CD_INFO+":")
+	# spliting the line by spaces helps us check the number of
+	# matches. When the third token is a 0, then we have no
+	# matches, otherwise we have at least 1
+	tokens = CDDB_start[0].split()
+	return tokens[2] != str(0)
 
 # function to parse tags from CDDB
 # @param cddb_text	- cd-info's CDDB output
@@ -323,6 +334,97 @@ def parseCDDBTrackTitle(cddb_text, start=0):
 # TODO: write this method
 def parseCDTEXT(cd_text):
 	print('nothing here yet')
+	
+# function to parse Disc tags from CD-TEXT
+# @param cd_text	- cd-info's CD-TEXT output
+# @param start		- starting index to search for Disc information
+# @returns tuple consisting of:
+#	- album title
+#		-- will be "UNTITLED" if Disc is missing TITLE
+#	- album artist (performer)
+#		-- will be "UNKNOWN" if Disc is missing PERFORMER
+#	- starting index of the disc data section
+#	- ending index of the disc data section
+# TODO
+def parseCDTEXTDisc(cd_text, start=0):
+	# retrieve disc data begin and endind index
+	disc_data_begin = parseCDTEXTKey(cd_text,CD_TEXT_DISC,start)
+	disc_data_end = parseCDTEXTKey(cd_text,CD_TEXT_NAME,disc_data_begin[2])
+	disc_data_begin_index = disc_data_begin[2]
+	disc_data_end_index = disc_data_end[1]
+	
+	# retrieve disc data
+	disc_title_data = parseCDTEXTKey(cd_text,CD_TEXT_TITLE,disc_data_begin_index,disc_data_end_index)
+	disc_artist_data = parseCDTEXTKey(cd_text,CD_TEXT_ARTIST,disc_data_begin_index,disc_data_end_index)
+	
+	# decide which datas are there or not
+	disc_title = ''
+	disc_artist = ''
+	if isEveryElementMinusOne(disc_title_data):
+		disc_title = CD_TEXT_UNT
+	else:
+		disc_title = disc_title_data[0]
+	if isEveryElementMinusOne(disc_artist_data):
+		disc_artist = CD_TEXT_UNK
+	else:
+		disc_artist = disc_artist_data[0]
+		
+	return (disc_title,disc_artist,disc_data_begin_index,disc_data_end_index)
+	
+# function to parse a CD-TEXT key from cd-info's CD-TEXT output
+# @param cd_text	- cd-info's CD-TEXT output
+# @param key		- the key to search for
+# @param start		- starting index to search for the key
+# @param end		- ending index to search for the key
+# @returns a tuple consisting of:
+#	- entry (data that follows the key)
+#	- starting index of the entry line
+#	- ending index of the entry line
+# all values of the tuple will be -1 if the key was not found
+def parseCDTEXTKey(cd_text, key, start=0, end=-1):
+	if end < 0:
+		end = len(cd_text)
+	# retrieve the line that has the key
+	key_index = cddb_text.find(key,start,end)
+	if key_index >= 0:
+		key_end_index = cddb_text.find(NEWLINE,key_index+len(key),end)
+	
+		# cutout the data from that key and strip the surrounding single
+		# quotes
+		entry = cddb_text[key_index+len(key):key_end_index].strip().strip("\'")
+	
+		return (entry,key_index,key_end_index)
+		
+	return (-1,-1,-1) # if we didnt find the key
+	
+# function to parse a Track's tags from CD-TEXT
+# @param cd_text		- cd-info's CD-TEXT output
+# @param track_number	- the track number we are trying to find
+# @param start			- starting index to search for the key
+# @returns a tuple consisting of:
+#	- track title
+#		-- will be "TRACK #", where track_number is #, if TITLE not found
+#	- track artist
+#		-- will be "UNKNOWN" if PERFORMER not found
+#	- starting index of the track data section
+#	- ending index of the track data section
+# TODO
+def parseCDTEXTTrack(cd_text, track_number, start=0):
+	print('nothing here yet')
+	
+# function to parse Track tags from CD-TEXT
+# @param cd_text	- cd-info's CD-TEXT output
+# @param start		- starting index to search for Track information
+# @returns tuple consisiting of:
+#	- list of track titles
+#		-- missing TRACK will be "TRACK #"
+#	- list of track artists (performers)
+#		-- missing PERFORMER will be "UNKNOWN"
+#	- boolean where true means multiple artists, false means not
+#		-- if all PERFORMER is "UNKNOWN", this will be False
+# TODO
+def parseCDTEXTTracks(cd_text, start=0):
+	print('nothing here yet')
 
 ###	begin cd-info program flow	========================================
 
@@ -330,7 +432,8 @@ def parseCDTEXT(cd_text):
 
 test_output = open('cd-info-sample-output','r')
 test_output_text = test_output.read()
-
+if hasCDDB(test_output_text):
+	print("pokay")
 test_results = parseCDDB(test_output_text)
 
 test_results.printData()
@@ -352,7 +455,7 @@ cddb_text = cd_info_output_split_split[0]
 cd_text_text = cd_info_output_split_split[2]
 
 # initalize cddb and cdtext tuples
-cddb_list = None
+cddb_list = None 
 cd_text_list = None
 
 ## check for cddb and cdtext and parse if they are found:
