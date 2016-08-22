@@ -327,8 +327,7 @@ def parseCDDBTrackTitle(cddb_text, start=0):
 
 # function to parse tags from CD-TEXT
 # @param cd_text	- cd-info's CD-TEXT output
-# @returns list of tuples where the first tuple is (album_name, artist)
-#	and all following tuples consist of (track_name, artist)
+# @returns an AlbumData built from the CD-TEXT output
 #
 # CD-TEXT Rules:
 #	- if the CD-TEXT for a track is missing its TITLE, "TRACK #" will 
@@ -340,9 +339,22 @@ def parseCDDBTrackTitle(cddb_text, start=0):
 #	for the album title.
 #	- if the CD-TEXT for Disc is missing PERFORMER, "UNKNOWN" will be
 #	used for the album artist.
-# TODO: write this method
 def parseCDTEXT(cd_text):
-	print('nothing here yet')
+	album = AlbumData()
+	
+	# parsing album data
+	disc_info = parseCDTEXTDisc(cd_text)
+	album.album_title = disc_info[0]
+	album.album_artist = disc_info[1]
+	
+	# parse track data
+	track_info = parseCDTEXTTracks(cd_text,disc_info[3])
+	album.track_names = track_info[0]
+	album.track_artists = track_info[1]
+	album.has_multiple_artists = track_info[2]
+	album.number_of_tracks = len(album.track_names)
+	
+	return album
 	
 # function to parse Disc tags from CD-TEXT
 # @param cd_text	- cd-info's CD-TEXT output
@@ -354,7 +366,6 @@ def parseCDTEXT(cd_text):
 #		-- will be "UNKNOWN" if Disc is missing PERFORMER
 #	- starting index of the disc data section
 #	- ending index of the disc data section
-# TODO
 def parseCDTEXTDisc(cd_text, start=0):
 	# retrieve disc data begin and endind index
 	disc_data_begin = parseCDTEXTKey(cd_text,CD_TEXT_DISC,start)
@@ -456,7 +467,6 @@ def parseCDTEXTTrack(cd_text, track_number, start=0):
 #		-- missing PERFORMER will be "UNKNOWN"
 #	- boolean where true means multiple artists, false means not
 #		-- if all PERFORMER is "UNKNOWN", this will be False
-# TODO
 def parseCDTEXTTracks(cd_text, start=0):
 	starting_point = start
 	track_titles = list()
@@ -479,8 +489,8 @@ def parseCDTEXTTracks(cd_text, start=0):
 
 test_output = open('cd-info-sample-output','r')
 test_output_text = test_output.read()
-test_results = parseCDTEXTTracks(test_output_text,5190)
-print(test_results)
+test_results = parseCDTEXT(test_output_text)
+test_results.printData()
 
 
 """ # The following code actually does the cmd call
