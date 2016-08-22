@@ -132,6 +132,13 @@ CMD_CD_INFO_FLAG_NO_DISC_MODE = '--no-disc-mode'
 # cd-info keywords
 STDOUT_CD_INFO_CDDB_START = 'CD Analysis Report'
 
+# cd-info menu text
+TAGS_FOUND = '\nI found these tags from the {:s}:\n'
+TAGS_NOT_FOUND = '\nNo {:s} tags found\n'
+TAGS_REFUSE = "Okay, I won\'t use these tags"
+NAME_CDDB = 'CDDB'
+NAME_CD_TEXT = 'CD-TEXT'
+
 # CDDB specific constants
 CDDB_ALBUM_ARTIST = 'Artist:'
 CDDB_ALBUM_TITLE = 'Title:'
@@ -189,7 +196,7 @@ def isEveryElementThisElement(_list, item):
 #	1 when the user enters 'Q' or 'q'
 #	-1 when the user enters 'N' or 'n'
 def confirmUserTagSelection():
-	user_answer = input('Do you want to use these tags? (Y/n/q)')
+	user_answer = input('Do you want to use these tags? (Y/n/q): ')
 	if user_answer.casefold() == 'n': # no
 		return -1
 	elif user_answer.casefold() == 'q': # quit
@@ -198,12 +205,44 @@ def confirmUserTagSelection():
 	return 0
 	
 # function to display a tag selection/vewing menu to the user
-# @param cddb_list		- the tuple data returned from parseCDDB
-# @param cd_text_list	- the tuple data returned from parseCDTEXT
-# @returns the selected tags or None if none were selected
-# TODO
-def displayUserTagMenu(cddb_list, cd_text_list):
-	print('nothing here yet')
+# NOTE: this function can exit the program
+# @param cddb_data		- athe AlbumData class generated from parsing
+#	CDDB output
+# @param cd_text_data	- the AlbumData class generated from parsing
+#	CD-TEXT output
+# @returns the selected AlbumData class or None if none were selected
+def displayUserTagMenu(cddb_data, cd_text_data):
+	# preview cddb tags and prompt user
+	if cddb_data is not None:
+		print(TAGS_FOUND.format(NAME_CDDB))
+		cddb_data.printData()
+		user_select = confirmUserTagSelection()
+		if user_select > 0: # user wishes to quit
+			print(EXITING)
+			exit(1)
+		elif user_select == 0: # user selects these tags
+			return cddb_data
+		else:
+			print(TAGS_REFUSE)
+	else:
+		print(TAGS_NOT_FOUND.format(NAME_CDDB))
+			
+	# preview cd-text tags and prompt user
+	if cd_text_data is not None:
+		print(TAGS_FOUND.format(NAME_CD_TEXT))
+		cd_text_data.printData()
+		user_select = confirmUserTagSelection()
+		if user_select > 0: # user wishes to quit
+			print(EXITING)
+			exit(1)
+		elif user_select == 0: # user selects these tags
+			return cd_text_data
+		else:
+			print(TAGS_REFUSE)
+	else:
+		print(TAGS_NOT_FOUND.format(NAME_CD_TEXT))
+			
+	return None # user does not select any tags
 
 # function to check if the given cddb text matched, which means we have
 # tags.
@@ -489,8 +528,9 @@ def parseCDTEXTTracks(cd_text, start=0):
 
 test_output = open('cd-info-sample-output','r')
 test_output_text = test_output.read()
-test_results = parseCDTEXT(test_output_text)
-test_results.printData()
+test_results = parseCDDB(test_output_text)
+more = displayUserTagMenu(test_results,test_results)
+print(more)
 
 
 """ # The following code actually does the cmd call
