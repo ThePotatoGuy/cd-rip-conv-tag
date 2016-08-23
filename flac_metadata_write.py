@@ -25,7 +25,7 @@ import subprocess
 
 EXITING = 'Exiting...'
 EMAIL = 'andreponce@null.net'
-PARSE_OUTPUT_FAILED = 'The {0:s} program did not produce the required output. \nPlease send an email to '+EMAIL+' with the version number of this program and the name and version number of {0:s}.'
+PARSE_OUTPUT_FAILED = '{0:s} did not produce the required output. \nPlease send an email to '+EMAIL+' with the version number of this program and the name and version number of {0:s}.'
 NEWLINE = '\n'
 
 ###	Formatting Constants	============================================
@@ -94,6 +94,11 @@ CMDS = (CMD_CD_INFO, CMD_CDPARA, CMD_FFMPEG)
 CMD_ERROR = 'ERROR: {:s} not found'
 
 ###	program testing functions	========================================
+#*** program test MAIN
+# function that checks if the required programs we need are installed
+# in this system.
+# EXIT NOTE: this function will exit the program if a required program is
+# 	missing
 def checkProgram():
 	for cmd in CMDS:
 		try:
@@ -204,8 +209,35 @@ def confirmUserTagSelection():
 	# else assume user accepts
 	return 0
 	
+# function to prompt and ask user if they would like to continue to use
+# program or quit 
+# this is meant to happen in case no tags were selected
+# @param allow_retry	- boolean, when true display and parse retry
+#	option, otherwise do not display or parse retry option
+# @returns:
+#	0 when the user enters 'Y' or 'y'
+#	1 when the user enters 'Q' or 'q' or any char other than 'Y', 'y',
+#		'R', 'r'
+#	-1 when the user enters 'R' or 'r'
+def confirmUserNoTagContinue(allow_retry):
+	prompt = 'No tags were selected. {0:s}\nWould you like to continue without applying tags{1:s} or quit? (y/{2:s}Q): '
+	
+	if allow_retry:
+		prompt = prompt.format('Tags were found from '+CMD_CD_INFO+'.',', retry selecting tags,','r/')
+	else:
+		prompt = prompt.format('','','')
+		
+	user_answer = input(prompt)
+	if user_answer.casefold() == 'y': # continue
+		return 0
+	elif user_answer.casefold() == 'r': # retry
+		return -1
+	# else assume user quits
+	return 1
+	
 # function to display a tag selection/vewing menu to the user
-# NOTE: this function can exit the program
+# EXIT NOTE: this function will exit the program if the user selects the
+#	quit option
 # @param cddb_data		- athe AlbumData class generated from parsing
 #	CDDB output
 # @param cd_text_data	- the AlbumData class generated from parsing
@@ -255,6 +287,68 @@ def hasCDDB(cddb_text):
 	# matches, otherwise we have at least 1
 	tokens = CDDB_start[0].split()
 	return tokens[2] != str(0)
+	
+#*** cd-info MAIN function 
+# function that calls cd-info and parses the output
+# EXIT NOTE: this function calls a function that may exit the program
+# EXIT NOTE: this function will exit the program if cd-info's output 
+#	produces unexpected results
+# EXIT NOTE: this function will exit the program if user wishes to abort
+#	program
+# @param text)in	- string to parse instead of calling subprocess. 
+# @returns an AlbumData class that consists of the tags generated,
+# 	or None if no tags were found or selected
+def generateTags(text_in=None):
+	cd_info_report = None
+	if text_in is None:
+		# call cd-info and retrieve output
+		# splits the output along the CD Analysis report line
+		cd_info_report = subprocess.run([CMD_CD_INFO,CMD_CD_INFO_FLAG_NO_DEV_INFO,CMD_CD_INFO_FLAG_NO_DISC_MODE], stdout=subprocess.PIPE, universal_newlines=True).stdout.partition(STDOUT_CD_INFO_CDDB_START)
+	else: # use text_in as cd-info output
+		cd_info_report = text_in.partition(STDOUT_CD_INFO_CDDB_START)
+	
+	# exit program if CD Analysis report is missing from text
+	if not cd_info_report[2]:
+		print(PARSE_OUTPUT_FAILED.format(CMD_CD_INFO))
+		exit(1)
+		
+	# split the CD analysis report into CDDB and CD-TEXT
+	cd_info_report_split = cd_info_report[2].partition('\n\n')
+	cddb_text = cd_info_report_split[0]
+	cd_text_text = cd_info_report_split[2]
+	
+	# initalize cddb and cdtext albumdata
+	cddb_tags = None
+	cd_text_tags = None
+	
+	# check for cddb and cdtext and parse if they are found
+	if hasCDDB(cddb_text):
+		cddb_tags = parseCDDB(cddb_text)
+	if cd_text_text:
+		cd_text_tags = parseCDTEXT(cd_text_text)
+		
+	tags_confirmed = False
+	while not tags_confirmed:
+		# display menu to prompt usr for tag selection
+		selected_tags = displayUserTagMenu(cddb_tags,cd_text_tags)
+		
+		# if no tags are selected and no tags were found, prompt user if
+		# they would like to continue program or quit.
+		# if no tags are selected and tags were found, prompt user if they
+		# would like to retry selecting tags, continue program, or quit
+		user_answer = None
+		if selected_tags is None:
+			if cddb_tags is None and cd_text_tags is None:
+				user_answer = confirmUserNoTagContinue(False)
+			else:
+				user_answer = confirmUserNoTagContinue(True)
+		
+		if user_answer is not None and user_answer > 0: # user quits
+			print(EXITING)
+			exit(1)
+		elif user_answer is None or user_answer == 0: 
+			# user selected tags or wishes to continue
+			return selected_tags
 
 # function to parse tags from CDDB
 # @param cddb_text	- cd-info's CDDB output
@@ -525,12 +619,13 @@ def parseCDTEXTTracks(cd_text, start=0):
 ###	begin cd-info program flow	========================================
 
 # The following code tests the parsing of cd-info ouptut
-
 test_output = open('cd-info-sample-output','r')
 test_output_text = test_output.read()
-test_results = parseCDDB(test_output_text)
-more = displayUserTagMenu(test_results,test_results)
-print(more)
+results = generateTags(test_output_text)
+if results is not None:
+	results.printData()
+else:
+	print(results)
 
 
 """ # The following code actually does the cmd call
