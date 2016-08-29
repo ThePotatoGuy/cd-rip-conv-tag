@@ -20,6 +20,7 @@ This script will also check if those programs exist before executing
 import io
 import os
 import subprocess
+import tempfile
 
 ###	General constants	================================================
 
@@ -27,6 +28,7 @@ EXITING = 'Exiting...'
 EMAIL = 'andreponce@null.net'
 PARSE_OUTPUT_FAILED = '{0:s} did not produce the required output. \nPlease send an email to '+EMAIL+' with the version number of this program and the name and version number of {0:s}.'
 NEWLINE = '\n'
+TEST_DIR = 'wav'
 
 ###	Formatting Constants	============================================
 
@@ -36,8 +38,8 @@ HEADER_BAR = '----------------------------'
 ##	program flow control constants	====================================
 
 SKIP_PROGRAM_TEST = True
-SKIP_CD_INFO = False
-SKIP_CD_PARA = True
+SKIP_CD_INFO = True
+SKIP_CD_PARA = False
 SKIP_FFMPEG = True
 
 ########################################################################
@@ -618,47 +620,74 @@ def parseCDTEXTTracks(cd_text, start=0):
 
 ###	begin cd-info program flow	========================================
 
-# The following code tests the parsing of cd-info ouptut
+# The following code uses a test file instead of actual progarm use
+# this will be commented at some point
 test_output = open('cd-info-sample-output','r')
 test_output_text = test_output.read()
-results = generateTags(test_output_text)
-if results is not None:
-	results.printData()
+
+tags = None
+if SKIP_CD_INFO:
+	print('Skipping retrieving tags from '+CMD_CD_INFO)
 else:
-	print(results)
+	print('Reading tags from disc...')
+	tags = generateTags(test_output_text)
 
+########################################################################
+###	rip tracks using cdparanoia and convert/write tags using ffmpeg	####
+########################################################################
+# we are usinga  context manager to create and use a temporary directory
+# as a result, we need to combine cdparanoia and ffmpeg functions in the
+# same place so the cnotext manager can encompass both processes.
 
-""" # The following code actually does the cmd call
+### cdparanoia/ffmpeg constants	========================================
 
-print('Getting tag data from disc...')
-# call the cd-info cmd
-cd_info_output_split = subprocess.run([CMD_CD_INFO,CMD_CD_INFO_FLAG_NO_DEV_INFO,CMD_CD_INFO_FLAG_NO_DISC_MODE], stdout=subprocess.PIPE, universal_newlines=True).stdout.partition(STDOUT_CD_INFO_CDDB_START)
+# cdparanoia specific flags
+CMD_CDPARA_FLAG_BATCH = '-B'
+CMD_CDPARA_FLAG_SELECT_ALL = '--'
 
-if not cd_info_output_split[2]: # check if the CD Analysis report text shows in the output
-	print(PARSE_OUTPUT_FAILED.format(CMD_CD_INFO))
-	exit(1)
+###	cdparanoia/ffmpeg functions	========================================
+
+#*** ffmpeg MAIN function
+# function that calls ffmpeg to convert wav files into flacs and write
+# their tags
+# @param tags		- AlbumData class that holds the tags we will write
+# @param wav_dir	- the directory of wav files to convert
+# TODO
+def convertTracks(tags, wav_dir=TEST_DIR):
+	print('nothing here yet')
+
+#*** cdparanoia MAIN function:
+# function that calls cdparanoia and rips tracks.
+# @param wav_dir	- the directory to store the ripped tracks
+# @returns True if the directory was made here without tempfile (so it
+#	needs to be deleted), or False if we did not create a directory
+def ripTracks(wav_dir=TEST_DIR):
+	# make dir if not exist
+	dir_made = False
+	if not (wav_dir in os.listdir()):
+		os.mkdir(wav_dir)
+		dir_made = True
 	
-# split the string again into CDDB and CD-TEXT parts
-cd_info_output_split_split = cd_info_output_split[2].partition('\n\n')
-cddb_text = cd_info_output_split_split[0]
-cd_text_text = cd_info_output_split_split[2]
+	# change dir and begni ripping
+	os.chdir(wav_dir)
+	subprocess.run([CMD_CDPARA,CMD_CDPARA_FLAG_BATCH,CMD_CDPARA_FLAG_SELECT_ALL])
+	os.chdir('..')
+	return dir_made
 
-# initalize cddb and cdtext tuples
-cddb_list = None 
-cd_text_list = None
-
-## check for cddb and cdtext and parse if they are found:
-if hascddb(cddb_text):
-	cddb_list = parseCDDB(cddb_text)
-
-if not cd_text_text:
-	cd_text_list = parseCDTEXT(cd_text_text)
-	
-## display menu to allow user to select tags
-song_tags = displayUserTagMenu(cddb_list,cd_text_list)
-"""
-
-
-
-
-
+###	cdparanoia/ffmpeg flow	============================================
+# since we are usinga context manager to handle our temp dir, this
+# context continues into flac conversion and tag writing.
+# TODO
+with tempfile.TemporaryDirectory(dir='.') as wav_dir:
+	dir_made = False
+	if SKIP_CD_PARA:
+		print('Skipping ripping tracks')
+	else:
+		print('Ripping tracks from disc...')
+		dir_made = ripTracks(wav_dir)
+		
+# more test code
+os.chdir('..')
+print(os.listdir())
+os.chdir('cd-rip-conv-tag')
+print(os.listdir())
