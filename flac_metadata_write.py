@@ -122,9 +122,9 @@ def checkProgram():
 ### begin program testing flow	========================================
 
 if SKIP_PROGRAM_TEST:
-	print('Skipping required program check')
+	print('Skipping required program check'+HEADER_BAR)
 else:
-	print('Checking if required programs exist...')
+	print('Checking if required programs exist...'+HEADER_BAR)
 	checkProgram()
 	
 ########################################################################
@@ -721,13 +721,13 @@ def ripTracks(wav_dir=TEST_DIR):
 # TODO
 with tempfile.TemporaryDirectory(dir='.') as wav_dir:
 	if SKIP_CD_PARA:
-		print('Skipping ripping tracks')
+		print('Skipping ripping tracks'+HEADER_BAR)
 	else:
-		print('Ripping tracks from disc...')
+		print('Ripping tracks from disc...'+HEADER_BAR)
 		ripTracks(wav_dir)
 		
 	if SKIP_FFMPEG:
 		print('Skipping converting tracks')
 	else:
-		print('Converting tracks to flac...')
+		print('Converting tracks to flac...'+HEADER_BAR)
 		convertTracks(tags,wav_dir)
