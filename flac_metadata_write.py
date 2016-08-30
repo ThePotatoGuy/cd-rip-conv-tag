@@ -29,6 +29,7 @@ EMAIL = 'andreponce@null.net'
 PARSE_OUTPUT_FAILED = '{0:s} did not produce the required output. \nPlease send an email to '+EMAIL+' with the version number of this program and the name and version number of {0:s}.'
 NEWLINE = '\n'
 TEST_DIR = 'wav'
+NUMBER_FORMAT = '{:02d}'
 
 ###	Formatting Constants	============================================
 
@@ -37,10 +38,10 @@ HEADER_BAR = '----------------------------'
 
 ##	program flow control constants	====================================
 
-SKIP_PROGRAM_TEST = True
-SKIP_CD_INFO = True
+SKIP_PROGRAM_TEST = False
+SKIP_CD_INFO = False
 SKIP_CD_PARA = False
-SKIP_FFMPEG = True
+SKIP_FFMPEG = False
 
 ########################################################################
 ###	CLASSES	############################################################
@@ -645,49 +646,88 @@ else:
 CMD_CDPARA_FLAG_BATCH = '-B'
 CMD_CDPARA_FLAG_SELECT_ALL = '--'
 
+# ffmpeg specific flags
+CMD_FFMPEG_FLAG_INPUT = '-i'
+CMD_FFMPEG_FLAG_METADATA = '-metadata'
+CMD_FFMPEG_FLAG_TITLE = 'title="'
+CMD_FFMPEG_FLAG_ARTIST = 'artist="'
+CMD_FFMPEG_FLAG_ALBUM = 'album="'
+CMD_FFMPEG_FLAG_AUDIO_STREAM = '-c:a'
+CMD_FFMPEG_FLAG_FLAC_AUDIO = 'flac'
+CMD_FFMPEG_FLAG_ENDQUOTE = '"'
+EXT_FLAC = '.flac'
+
+# ffmpeg errors
+FFMPEG_TRACK_COUNT_ERROR = 'ERROR: Number of tracks found on disc do not match number of tracks ripped from disc'
+
 ###	cdparanoia/ffmpeg functions	========================================
 
 #*** ffmpeg MAIN function
 # function that calls ffmpeg to convert wav files into flacs and write
 # their tags
+# EXIT NOTE: this function will exit if the tracks found in directory
+#	do not match the number of tracks read from disc
 # @param tags		- AlbumData class that holds the tags we will write
 # @param wav_dir	- the directory of wav files to convert
-# TODO
 def convertTracks(tags, wav_dir=TEST_DIR):
-	print('nothing here yet')
+	
+	# we are assuming that for each track in AlbumData, there is a
+	# corresponding wav file. We also assume os.listdir() will show us
+	# tracks alphabetically
+	# also its easier to send ffmpeg to files in a folder than send
+	# its output to a different folder other than current working direct
+	wav_tracks = sorted(os.listdir(wav_dir))
+	
+	"""
+	for index in range(0,tags.number_of_tracks):
+		artist = tags.album_artist
+		if tags.has_multiple_artists:
+			artist = (tags.track_artists)[index]
+		print(' '.join([CMD_FFMPEG_FLAG_AUDIO_STREAM,CMD_FFMPEG_FLAG_FLAC_AUDIO,CMD_FFMPEG_FLAG_METADATA,CMD_FFMPEG_FLAG_TITLE+(tags.track_names)[index]+CMD_FFMPEG_FLAG_ENDQUOTE,CMD_FFMPEG_FLAG_METADATA,CMD_FFMPEG_FLAG_ARTIST+artist+CMD_FFMPEG_FLAG_ENDQUOTE,CMD_FFMPEG_FLAG_METADATA,CMD_FFMPEG_FLAG_ALBUM+tags.album_title+CMD_FFMPEG_FLAG_ENDQUOTE,CMD_FFMPEG_FLAG_ENDQUOTE+NUMBER_FORMAT.format(index+1)+'_'+artist+" - "+(tags.track_names)[index]+EXT_FLAC+CMD_FFMPEG_FLAG_ENDQUOTE]))
+	"""
+	
+	# quit if numbers of tracks do not match up
+	if tags.number_of_tracks != len(wav_tracks):
+		print(FFMPEG_TRACK_COUNT_ERROR)
+		print(EXITING)
+		exit(1)
+	
+	index = 0
+	for wav_track in wav_tracks:
+		artist = tags.album_artist
+		if tags.has_multiple_artists:
+			artist = (tags.track_artists)[index]
+			
+		# this command does an ffmpeg convert and tag write
+		# it looks like:
+		# ffmpeg -i <input file> -metadata title="Title" -metadata 
+		# 	artist="Artist" -metadata album="Album" -c:a flac <output>
+		subprocess.run([CMD_FFMPEG,CMD_FFMPEG_FLAG_INPUT,wav_dir+'/'+wav_track,CMD_FFMPEG_FLAG_METADATA,CMD_FFMPEG_FLAG_TITLE+(tags.track_names)[index]+CMD_FFMPEG_FLAG_ENDQUOTE,CMD_FFMPEG_FLAG_METADATA,CMD_FFMPEG_FLAG_ARTIST+artist+CMD_FFMPEG_FLAG_ENDQUOTE,CMD_FFMPEG_FLAG_METADATA,CMD_FFMPEG_FLAG_ALBUM+tags.album_title+CMD_FFMPEG_FLAG_ENDQUOTE,CMD_FFMPEG_FLAG_AUDIO_STREAM,CMD_FFMPEG_FLAG_FLAC_AUDIO,NUMBER_FORMAT.format(index+1)+'_'+artist+" - "+(tags.track_names)[index]+EXT_FLAC])
+		
+		index += 1
 
 #*** cdparanoia MAIN function:
 # function that calls cdparanoia and rips tracks.
 # @param wav_dir	- the directory to store the ripped tracks
-# @returns True if the directory was made here without tempfile (so it
-#	needs to be deleted), or False if we did not create a directory
 def ripTracks(wav_dir=TEST_DIR):
-	# make dir if not exist
-	dir_made = False
-	if not (wav_dir in os.listdir()):
-		os.mkdir(wav_dir)
-		dir_made = True
-	
 	# change dir and begni ripping
 	os.chdir(wav_dir)
 	subprocess.run([CMD_CDPARA,CMD_CDPARA_FLAG_BATCH,CMD_CDPARA_FLAG_SELECT_ALL])
 	os.chdir('..')
-	return dir_made
 
 ###	cdparanoia/ffmpeg flow	============================================
 # since we are usinga context manager to handle our temp dir, this
 # context continues into flac conversion and tag writing.
 # TODO
 with tempfile.TemporaryDirectory(dir='.') as wav_dir:
-	dir_made = False
 	if SKIP_CD_PARA:
 		print('Skipping ripping tracks')
 	else:
 		print('Ripping tracks from disc...')
-		dir_made = ripTracks(wav_dir)
+		ripTracks(wav_dir)
 		
-# more test code
-os.chdir('..')
-print(os.listdir())
-os.chdir('cd-rip-conv-tag')
-print(os.listdir())
+	if SKIP_FFMPEG:
+		print('Skipping converting tracks')
+	else:
+		print('Converting tracks to flac...')
+		convertTracks(tags,wav_dir)
