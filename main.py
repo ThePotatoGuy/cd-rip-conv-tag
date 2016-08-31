@@ -42,6 +42,7 @@ SKIP_PROGRAM_TEST = False
 SKIP_CD_INFO = False
 SKIP_CD_PARA = False
 SKIP_FFMPEG = False
+SKIP_MOVE = False
 
 ########################################################################
 ###	CLASSES	############################################################
@@ -649,16 +650,19 @@ CMD_CDPARA_FLAG_SELECT_ALL = '--'
 # ffmpeg specific flags
 CMD_FFMPEG_FLAG_INPUT = '-i'
 CMD_FFMPEG_FLAG_METADATA = '-metadata'
-CMD_FFMPEG_FLAG_TITLE = 'title="'
-CMD_FFMPEG_FLAG_ARTIST = 'artist="'
-CMD_FFMPEG_FLAG_ALBUM = 'album="'
+CMD_FFMPEG_FLAG_TITLE = 'title='
+CMD_FFMPEG_FLAG_ARTIST = 'artist='
+CMD_FFMPEG_FLAG_ALBUM = 'album='
 CMD_FFMPEG_FLAG_AUDIO_STREAM = '-c:a'
 CMD_FFMPEG_FLAG_FLAC_AUDIO = 'flac'
-CMD_FFMPEG_FLAG_ENDQUOTE = '"'
 EXT_FLAC = '.flac'
 
 # ffmpeg errors
 FFMPEG_TRACK_COUNT_ERROR = 'ERROR: Number of tracks found on disc do not match number of tracks ripped from disc'
+
+# additional cmds
+CMD_MV = 'mv'
+CMD_MV_FLAC_WILD = '*.flac'
 
 ###	cdparanoia/ffmpeg functions	========================================
 
@@ -702,9 +706,18 @@ def convertTracks(tags, wav_dir=TEST_DIR):
 		# it looks like:
 		# ffmpeg -i <input file> -metadata title="Title" -metadata 
 		# 	artist="Artist" -metadata album="Album" -c:a flac <output>
-		subprocess.run([CMD_FFMPEG,CMD_FFMPEG_FLAG_INPUT,wav_dir+'/'+wav_track,CMD_FFMPEG_FLAG_METADATA,CMD_FFMPEG_FLAG_TITLE+(tags.track_names)[index]+CMD_FFMPEG_FLAG_ENDQUOTE,CMD_FFMPEG_FLAG_METADATA,CMD_FFMPEG_FLAG_ARTIST+artist+CMD_FFMPEG_FLAG_ENDQUOTE,CMD_FFMPEG_FLAG_METADATA,CMD_FFMPEG_FLAG_ALBUM+tags.album_title+CMD_FFMPEG_FLAG_ENDQUOTE,CMD_FFMPEG_FLAG_AUDIO_STREAM,CMD_FFMPEG_FLAG_FLAC_AUDIO,NUMBER_FORMAT.format(index+1)+'_'+artist+" - "+(tags.track_names)[index]+EXT_FLAC])
+		subprocess.run([CMD_FFMPEG,CMD_FFMPEG_FLAG_INPUT,wav_dir+'/'+wav_track,CMD_FFMPEG_FLAG_METADATA,CMD_FFMPEG_FLAG_TITLE+(tags.track_names)[index],CMD_FFMPEG_FLAG_METADATA,CMD_FFMPEG_FLAG_ARTIST+artist,CMD_FFMPEG_FLAG_METADATA,CMD_FFMPEG_FLAG_ALBUM+tags.album_title,CMD_FFMPEG_FLAG_AUDIO_STREAM,CMD_FFMPEG_FLAG_FLAC_AUDIO,NUMBER_FORMAT.format(index+1)+'_'+artist+" - "+(tags.track_names)[index]+EXT_FLAC])
 		
 		index += 1
+		
+# function to move the flac files in the current directory into a folder
+# so it has the format:
+# <artist> - <album>
+# @param tags	- the AlbumData that represents this album
+def moveFlacsToFolder(tags):
+	dir_name = tags.album_artist+' - '+tags.album_title
+	os.mkdir(dir_name)
+	subprocess.run(CMD_MV+' '+CMD_MV_FLAC_WILD+' "'+dir_name+'"', shell=True)
 
 #*** cdparanoia MAIN function:
 # function that calls cdparanoia and rips tracks.
@@ -731,3 +744,5 @@ with tempfile.TemporaryDirectory(dir='.') as wav_dir:
 	else:
 		print('Converting tracks to flac...'+HEADER_BAR)
 		convertTracks(tags,wav_dir)
+	moveFlacsToFolder(tags)
+		
