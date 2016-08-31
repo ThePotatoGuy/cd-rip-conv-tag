@@ -623,15 +623,15 @@ def parseCDTEXTTracks(cd_text, start=0):
 
 # The following code uses a test file instead of actual progarm use
 # this will be commented at some point
-test_output = open('cd-info-sample-output','r')
-test_output_text = test_output.read()
+#test_output = open('cd-info-sample-output','r')
+#test_output_text = test_output.read()
 
 tags = None
 if SKIP_CD_INFO:
 	print('Skipping retrieving tags from '+CMD_CD_INFO)
 else:
 	print('Reading tags from disc...')
-	tags = generateTags(test_output_text)
+	tags = generateTags()
 
 ########################################################################
 ###	rip tracks using cdparanoia and convert/write tags using ffmpeg	####
