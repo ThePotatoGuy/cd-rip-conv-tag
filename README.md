@@ -6,3 +6,5 @@ Programs called:
 *	ffmpeg
 
 This script will also check if those programs exist before executing
+
+This is only tested in a Linux environment
