@@ -5,4 +5,6 @@ Programs called:
 *	cdparanoia
 *	ffmpeg
 
-This script will also check if those programs exist before executing
+This script will also check if those programs exist before executing. 
+
+This has only been tested on ArchLinux
