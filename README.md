@@ -7,4 +7,4 @@ Programs called:
 
 This script will also check if those programs exist before executing. 
 
-This has only been tested on ArchLinux
+This is only tested in a Linux environment (Arch Linux)
