@@ -297,8 +297,9 @@ def hasCDDB(cddb_text):
     # spliting the line by spaces helps us check the number of
     # matches. When the third token is a 0, then we have no
     # matches, otherwise we have at least 1
+    print(CDDB_start)
     tokens = CDDB_start[0].split()
-    return tokens[2] != str(0)
+    return tokens[1] != str(0)
     
 #*** cd-info MAIN function 
 # function that calls cd-info and parses the output
@@ -507,7 +508,7 @@ def parseCDTEXT(cd_text):
     album.album_artist = disc_info[1]
     
     # parse track data
-    track_info = parseCDTEXTTracks(cd_text,disc_info[3])
+    track_info = parseCDTEXTTracks(cd_text,disc_info[3],disc_info[1])
     album.track_names = track_info[0]
     album.track_artists = track_info[1]
     album.has_multiple_artists = track_info[2]
@@ -600,6 +601,8 @@ def parseCDTEXTKey(cd_text, key, start=0, end=-1):
 # @param cd_text        - cd-info's CD-TEXT output
 # @param track_number   - the track number we are trying to find
 # @param start          - starting index to search for the key
+# @param album_artist   - the album artist. only used if an album artist
+#   exists, replaces UNKNOWN tags
 # @returns a tuple consisting of:
 #   - track title
 #       -- will be "TRACK #", where track_number is #, if TITLE not 
@@ -608,7 +611,7 @@ def parseCDTEXTKey(cd_text, key, start=0, end=-1):
 #       -- will be "UNKNOWN" if PERFORMER not found
 #   - starting index of the track data section
 #   - ending index of the track data section
-def parseCDTEXTTrack(cd_text, track_number, start=0):
+def parseCDTEXTTrack(cd_text, track_number, start=0, album_artist=None):
     # retreive track begin and end index
     track_data_begin = parseCDTEXTKey(cd_text,CD_TEXT_NAME,start)
     track_data_end = parseCDTEXTKey(
@@ -645,7 +648,10 @@ def parseCDTEXTTrack(cd_text, track_number, start=0):
     else:
         track_title = track_title_data[0]
     if isEveryElementMinusOne(track_artist_data):
-        track_artist = CD_TEXT_UNK
+        if album_artist is None:
+            track_artist = CD_TEXT_UNK
+        else:
+            track_artist = album_artist
     else:
         track_artist = track_artist_data[0]
         
@@ -659,6 +665,7 @@ def parseCDTEXTTrack(cd_text, track_number, start=0):
 # function to parse Track tags from CD-TEXT
 # @param cd_text    - cd-info's CD-TEXT output
 # @param start      - starting index to search for Track information
+# @param album_artist - the album artist to replace missing performers
 # @returns tuple consisiting of:
 #   - list of track titles
 #       -- missing TRACK will be "TRACK #"
@@ -666,7 +673,7 @@ def parseCDTEXTTrack(cd_text, track_number, start=0):
 #       -- missing PERFORMER will be "UNKNOWN"
 #   - boolean where true means multiple artists, false means not
 #       -- if all PERFORMER is "UNKNOWN", this will be False
-def parseCDTEXTTracks(cd_text, start=0):
+def parseCDTEXTTracks(cd_text, start=0, album_artist=None):
     starting_point = start
     track_titles = list()
     track_artists = list()
@@ -677,7 +684,8 @@ def parseCDTEXTTracks(cd_text, start=0):
         track_found = parseCDTEXTTrack(
             cd_text,
             track_count,
-            starting_point
+            starting_point,
+            album_artist
         )
         track_titles.append(track_found[0])
         track_artists.append(track_found[1])
