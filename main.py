@@ -297,7 +297,7 @@ def hasCDDB(cddb_text):
     # spliting the line by spaces helps us check the number of
     # matches. When the third token is a 0, then we have no
     # matches, otherwise we have at least 1
-    print(CDDB_start)
+    #print(CDDB_start)
     tokens = CDDB_start[0].split()
     return tokens[1] != str(0)
     
@@ -737,13 +737,28 @@ EXT_FLAC = '.flac'
 
 # ffmpeg errors
 FFMPEG_TRACK_COUNT_ERROR = 'ERROR: Number of tracks found on disc do \
-    not match number of tracks ripped from disc'
+not match number of tracks ripped from disc'
 
 # additional cmds
 CMD_MV = 'mv'
 CMD_MV_FLAC_WILD = '*.flac'
 
+FFMPEG_PROMPT_TRACK_SKIP = 'Would you like to apply tags anyway? (The extra \
+tags will be ignored) (y/N)'
+
 ### cdparanoia/ffmpeg functions ========================================
+
+# function to prompt user and ask them if they would like to apply tags even
+# if a track count error was found.
+# @returns:
+#   0 if the user enters 'y' or 'Y'
+#   1 if the user enters 'n' or 'N' (or any other character)
+def confirmUserTrackSkip():
+    user_answer = input(FFMPEG_PROMPT_TRACK_SKIP)
+    if user_answer.casefold() == 'y':   # yes
+        return 0
+    # else assume user does not accept
+    return 1
 
 #*** ffmpeg MAIN function
 # function that calls ffmpeg to convert wav files into flacs and write
@@ -772,8 +787,11 @@ def convertTracks(tags, wav_dir=TEST_DIR):
     # quit if numbers of tracks do not match up
     if tags.number_of_tracks != len(wav_tracks):
         print(FFMPEG_TRACK_COUNT_ERROR)
-        print(EXITING)
-        exit(1)
+        if confirmUserTrackSkip() != 0:
+            print(EXITING)
+            exit(1)
+        else:
+            print('Ignoring extra tags...')
     
     index = 0
     for wav_track in wav_tracks:
