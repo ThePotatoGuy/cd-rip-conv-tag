@@ -76,10 +76,7 @@ class AlbumData:
         for track_number in range(0,self.number_of_tracks):
             print("Track "+str(track_number+1)+": ",end="")
             
-            if(self.has_multiple_artists):
-                print(self.track_artists[track_number],end="")
-            else:
-                print(self.album_artist,end="")
+            print(self.track_artists[track_number],end="")
                 
             print(" - "+self.track_names[track_number])
 
@@ -346,6 +343,7 @@ def generateTags(text_in=None):
     if hasCDDB(cddb_text):
         cddb_tags = parseCDDB(cddb_text)
     if cd_text_text:
+        #print(cd_text_text)
         cd_text_tags = parseCDTEXT(cd_text_text)
         
     tags_confirmed = False
@@ -506,6 +504,7 @@ def parseCDTEXT(cd_text):
     disc_info = parseCDTEXTDisc(cd_text)
     album.album_title = disc_info[0]
     album.album_artist = disc_info[1]
+#    print(disc_info[1])
     
     # parse track data
     track_info = parseCDTEXTTracks(cd_text,disc_info[3],disc_info[1])
@@ -513,7 +512,12 @@ def parseCDTEXT(cd_text):
     album.track_artists = track_info[1]
     album.has_multiple_artists = track_info[2]
     album.number_of_tracks = len(album.track_names)
-    
+   
+    # if dont have album artist, but have complete artists for every track,
+    # set album artist to that artist
+    if album.album_artist == CD_TEXT_UNK and not album.has_multiple_artists:
+        album.album_artist = album.track_artists[0]
+
     return album
     
 # function to parse Disc tags from CD-TEXT
@@ -639,6 +643,7 @@ def parseCDTEXTTrack(cd_text, track_number, start=0, album_artist=None):
         track_data_begin_index,
         track_data_end_index
     )
+#    print(track_artist_data)
     
     # decide which datas are there or not
     track_title = ''
@@ -795,9 +800,7 @@ def convertTracks(tags, wav_dir=TEST_DIR):
     
     index = 0
     for wav_track in wav_tracks:
-        artist = tags.album_artist
-        if tags.has_multiple_artists:
-            artist = (tags.track_artists)[index]
+        artist = (tags.track_artists)[index]
             
         # this command does an ffmpeg convert and tag write
         # it looks like:
