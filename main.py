@@ -169,6 +169,19 @@ CD_TEXT_TRK = 'TRACK {:02d}'
 
 ### cd-info functions   ================================================
 
+
+# function to clean text so its approripate for ffmpeg
+# IN:
+#   @param text - text to clean
+#
+# OUT:
+#   @returns cleaned text
+def cleanText(text):
+    text = text.replace("/", "(slash)")
+    text = text.replace("\\", "(backslash)")
+    return text
+
+
 # function to check if every element in the given list is a -1
 # ASSUMES the given list has at least 1 element
 # @param _list  - the list to check
@@ -433,7 +446,7 @@ def parseCDDBKey(cddb_text, key, start=0):
     entry = cddb_text[
         key_index+len(key):key_end_index].strip().strip("\'")
     
-    return (entry,key_index,key_end_index)
+    return (cleanText(entry),key_index,key_end_index)
     
 # function to parse a track artist from CDDB
 # @param cddb_text  - cd-infpo's CDDB output
@@ -597,7 +610,7 @@ def parseCDTEXTKey(cd_text, key, start=0, end=-1):
         entry = cd_text[
             key_index+len(key):key_end_index].strip().strip("\'")
     
-        return (entry,key_index,key_end_index)
+        return (cleanText(entry),key_index,key_end_index)
         
     return (-1,-1,-1) # if we didnt find the key
     
@@ -788,7 +801,7 @@ def convertTracks(tags, wav_dir=TEST_DIR):
             artist = (tags.track_artists)[index]
         print(' '.join([CMD_FFMPEG_FLAG_AUDIO_STREAM,CMD_FFMPEG_FLAG_FLAC_AUDIO,CMD_FFMPEG_FLAG_METADATA,CMD_FFMPEG_FLAG_TITLE+(tags.track_names)[index]+CMD_FFMPEG_FLAG_ENDQUOTE,CMD_FFMPEG_FLAG_METADATA,CMD_FFMPEG_FLAG_ARTIST+artist+CMD_FFMPEG_FLAG_ENDQUOTE,CMD_FFMPEG_FLAG_METADATA,CMD_FFMPEG_FLAG_ALBUM+tags.album_title+CMD_FFMPEG_FLAG_ENDQUOTE,CMD_FFMPEG_FLAG_ENDQUOTE+NUMBER_FORMAT.format(index+1)+'_'+artist+" - "+(tags.track_names)[index]+EXT_FLAC+CMD_FFMPEG_FLAG_ENDQUOTE]))
     """
-    
+
     # quit if numbers of tracks do not match up
     if tags.number_of_tracks != len(wav_tracks):
         print(FFMPEG_TRACK_COUNT_ERROR)
