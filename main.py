@@ -749,6 +749,7 @@ CMD_FFMPEG_FLAG_METADATA = '-metadata'
 CMD_FFMPEG_FLAG_TITLE = 'title='
 CMD_FFMPEG_FLAG_ARTIST = 'artist='
 CMD_FFMPEG_FLAG_ALBUM = 'album='
+CMD_FFMPEG_FLAG_TRACK = "track="
 CMD_FFMPEG_FLAG_AUDIO_STREAM = '-c:a'
 CMD_FFMPEG_FLAG_FLAC_AUDIO = 'flac'
 EXT_FLAC = '.flac'
@@ -818,7 +819,8 @@ def convertTracks(tags, wav_dir=TEST_DIR):
         # this command does an ffmpeg convert and tag write
         # it looks like:
         # ffmpeg -i <input file> -metadata title="Title" -metadata 
-        #   artist="Artist" -metadata album="Album" -c:a flac <output>
+        #   artist="Artist" -metadata album="Album" 
+        #   -metadata track=## -c:a flac <output>
         subprocess.run(
             [
                 CMD_FFMPEG,
@@ -830,6 +832,8 @@ def convertTracks(tags, wav_dir=TEST_DIR):
                 CMD_FFMPEG_FLAG_ARTIST+artist,
                 CMD_FFMPEG_FLAG_METADATA,
                 CMD_FFMPEG_FLAG_ALBUM+tags.album_title,
+                CMD_FFMPEG_FLAG_METADATA,
+                CMD_FFMPEG_FLAG_TRACK+str(index+1),
                 CMD_FFMPEG_FLAG_AUDIO_STREAM,
                 CMD_FFMPEG_FLAG_FLAC_AUDIO,
                 NUMBER_FORMAT.format(index+1)+'_'+artist+" - "+ \
