@@ -64,7 +64,16 @@ class AlbumData:
     # boolean to say if this album has multiple artists or not
     # (i.e: different tracks have different artists (various artists)
     has_multiple_artists = False
-    
+
+    # init
+    def __init__(self):
+        self.album_artist = "Unknown"
+        self.album_title = "Untitled"
+        self.number_of_tracks = 0
+        self.track_artists = list()
+        self.track_names = list()
+        self.has_multiple_artists = False
+
     # function to print the data stored in this class in a nice format
     def printData(self):
         # print album
@@ -79,6 +88,15 @@ class AlbumData:
             print(self.track_artists[track_number],end="")
                 
             print(" - "+self.track_names[track_number])
+
+    # function to clear data
+    def clear(self):
+        self.album_artist = "Unknown"
+        self.album_title = "Untitled"
+        self.number_of_tracks = 0
+        self.track_artists = list()
+        self.track_names = list()
+        self.has_multiple_artists = False
 
 ########################################################################
 ### initial tests if program exists ####################################
@@ -239,9 +257,10 @@ def confirmUserTagSelection():
 #   1 when the user enters 'Q' or 'q' or any char other than 'Y', 'y',
 #       'R', 'r'
 #   -1 when the user enters 'R' or 'r'
+#   2 when the user enters 'W' or 'w'
 def confirmUserNoTagContinue(allow_retry):
     prompt = 'No tags were selected. {0:s}\nWould you like to continue \
-        without applying tags{1:s} or quit? (y/{2:s}Q): '
+        without applying tags{1:s},write your own tags, or quit? (y/{2:s}w/Q): '
     
     if allow_retry:
         prompt = prompt.format('Tags were found from '+CMD_CD_INFO+'.',
@@ -254,6 +273,8 @@ def confirmUserNoTagContinue(allow_retry):
         return 0
     elif user_answer.casefold() == 'r': # retry
         return -1
+    elif user_answer.casefold() == 'w': # write in tags
+        return 2
     # else assume user quits
     return 1
     
@@ -376,12 +397,73 @@ def generateTags(text_in=None):
             else:
                 user_answer = confirmUserNoTagContinue(True)
         
-        if user_answer is not None and user_answer > 0: # user quits
+        if user_answer is not None and user_answer == 1: # user quits
             print(EXITING)
             exit(1)
+        elif user_answer is not None and user_answer == 2: 
+            # user wants to manuall enter tags
+            entered_tags = getEnteredTags()
+            print("\nEntered Tags:")
+            entered_tags.printData()
+            use_tags = input("\nUse these tags (y/N): ")
+            if use_tags.casefold() == 'y':
+                return entered_tags
+            else:
+                entered_tags.clear()
+
         elif user_answer is None or user_answer == 0: 
             # user selected tags or wishes to continue
             return selected_tags
+
+
+# function that allows user to enter in tags
+# @returns AlbumData class
+# if user wishes to abort this, just ctrl+C
+def getEnteredTags():
+
+    # an album
+    album = AlbumData()
+
+    # first track count
+    album.number_of_tracks = getTrackCount()
+
+    # also album title
+    album.album_title = getInput("Enter album title: ")
+
+    # quickly ask user for album artist?
+    print("Do not enter album artist if you have various artists\n")
+    user_answer = getInput("Do we have an album artist (y/N): ")
+    if user_answer.casefold() == 'y':
+        album.has_multiple_artists = False
+        album.album_artist = getInput("Enter album artist: ")
+    else:
+        album.has_multiple_artists = True
+
+    for track in range(0,album.number_of_tracks):
+        album.track_names.append(getInput("Enter track {:d} title: ".format(track+1)))
+        if album.has_multiple_artists:
+            album.track_artists.append(getInput("Enter track aritst: "))
+        else:
+            album.track_artists.append(album.album_artist)
+    return album
+
+# get track count
+# @returns number of tracks
+def getTrackCount():
+    while True:
+        track_count = getInput("How many tracks: ")
+        if track_count.isdigit():
+            return int(track_count)
+        else:
+            print("'" + track_count + "' is not a valid track count")
+
+
+# function that gets an input string from the user
+# @param prompt - the prompt to display to tuser
+# @returns a string entered by user
+# (NO VALDIATIOn)
+def getInput(prompt):
+    return input(prompt).strip()
 
 # function to parse tags from CDDB
 # @param cddb_text  - cd-info's CDDB output
