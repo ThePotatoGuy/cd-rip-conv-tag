@@ -547,7 +547,7 @@ def getEnteredTags():
 def getTrackCount():
     while True:
         track_count = getInput("How many tracks: ")
-        if track_count.isdigit():
+        if track_count.isdigit() and int(track_count) > 0:
             return int(track_count)
         else:
             print("'" + track_count + "' is not a valid track count")
