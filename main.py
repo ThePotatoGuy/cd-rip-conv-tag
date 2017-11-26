@@ -21,6 +21,8 @@ import io
 import os
 import subprocess
 import tempfile
+from enum import IntEnum
+from enum import Enum
 
 ### General constants   ================================================
 
@@ -32,11 +34,13 @@ PARSE_OUTPUT_FAILED = '{0:s} did not produce the required output. \
 NEWLINE = '\n'
 TEST_DIR = 'wav'
 NUMBER_FORMAT = '{:02d}'
+PAUSE_SCREEN = "<Press Enter to continue>"
 
 ### Formatting Constants    ============================================
 
 # initalize user prompt formatting
 HEADER_BAR = '----------------------------'
+CLEAR_SCREEN = "\033[H\033[J"
 
 ##  program flow control constants  ====================================
 
@@ -65,29 +69,46 @@ class AlbumData:
     # (i.e: different tracks have different artists (various artists)
     has_multiple_artists = False
 
+    # the source these tags were retrieved from 
+    tag_source = None
+
     # init
-    def __init__(self):
+    def __init__(self, _tag_source):
         self.album_artist = "Unknown"
         self.album_title = "Untitled"
         self.number_of_tracks = 0
         self.track_artists = list()
         self.track_names = list()
         self.has_multiple_artists = False
+        self.tag_source = _tag_source
+
+    # converts this album to a string variant
+    def __str__(self):
+        outString = ""
+
+        # album
+        outString += (
+            "Album title: " + self.album_title + "\n" +
+            "Album artist: " + self.album_artist + "\n" +
+            "Number of tracks: " + str(self.number_of_tracks) + "\n"
+        )
+
+        # tracks
+        for track_number in range(0, self.number_of_tracks):
+            outString += (
+                "Track " + str(track_number+1) + ": " + 
+                self.track_artists[track_number] + " - " +
+                self.track_names[track_number] + "\n"
+            )
+
+        return outString
+
 
     # function to print the data stored in this class in a nice format
     def printData(self):
         # print album
-        print("Album title: "+self.album_title)
-        print("Album artist: "+self.album_artist)
-        print("Number of tracks: "+str(self.number_of_tracks))
-        
-        # print tracks
-        for track_number in range(0,self.number_of_tracks):
-            print("Track "+str(track_number+1)+": ",end="")
-            
-            print(self.track_artists[track_number],end="")
-                
-            print(" - "+self.track_names[track_number])
+        print(str(self))
+
 
     # function to clear data
     def clear(self):
@@ -97,6 +118,21 @@ class AlbumData:
         self.track_artists = list()
         self.track_names = list()
         self.has_multiple_artists = False
+
+# enum for menu options
+class TagMainMenuOption(IntEnum):
+    USE = 1
+    SWITCH = 2
+    CUSTOM = 3
+    OPTION = 4
+    QUIT = 0
+    INVALID = -1
+
+# enum for Tag display state
+class TagDisplayState(Enum):
+    CDDB = 1
+    CDTEXT = 2
+    CUSTOM = 3
 
 ########################################################################
 ### initial tests if program exists ####################################
@@ -163,11 +199,32 @@ CMD_CD_INFO_FLAG_NO_DISC_MODE = '--no-disc-mode'
 STDOUT_CD_INFO_CDDB_START = 'CD Analysis Report'
 
 # cd-info menu text
-TAGS_FOUND = '\nI found these tags from the {:s}:\n'
+TAGS_FOUND = '\n{:s} tags found\n'
 TAGS_NOT_FOUND = '\nNo {:s} tags found\n'
 TAGS_REFUSE = "Okay, I won\'t use these tags"
 NAME_CDDB = 'CDDB'
 NAME_CD_TEXT = 'CD-TEXT'
+NAME_CUSTOM = "CUSTOM"
+
+# user tag menu
+USER_TAG_MENU = (
+    CLEAR_SCREEN + "\n" +
+    HEADER_BAR + "\n" +
+    "   {:s} Tags:\n" +
+    HEADER_BAR + "\n\n" +
+    "{:s}\n\n" + # album toString goes here
+    "Menu options:\n" +
+    "   1) - Use these tags\n" +
+    "   2) - View {:s} tags\n" +
+    "   3) - View/Edit custom tags\n" +
+    "   4) - Apply album artist to track artists (CANNOT BE UNDONE)\n" +
+    "\nQuit options:\n" +
+    "   0) - Quit program"
+)
+CHOOSE_MENU_OPTION = "Choose menu option above: "
+INVALID_MENU_OPTION = "'{:s}' is not a valid menu choice"
+NO_EMPTY_TAGS = "Can't select empty tags"
+CUSTOM_TAG_PROMPT = "<Press Enter to begin writing custom tags>"
 
 # CDDB specific constants
 CDDB_ALBUM_ARTIST = 'Artist:'
@@ -186,6 +243,13 @@ CD_TEXT_UNK = 'UNKNOWN'
 CD_TEXT_TRK = 'TRACK {:02d}'
 
 ### cd-info functions   ================================================
+
+
+# functon that applies the given artist to all the track artists in 
+# the given AlbumData object
+def applyArtistToAll(artist, album):
+    for track_number in range(0, album.number_of_tracks):
+        album.track_artists[track_number] = artist
 
 
 # function to clean text so its approripate for ffmpeg
@@ -238,12 +302,15 @@ def isEveryElementThisElement(_list, item):
 #       'q', 'Q'
 #   1 when the user enters 'Q' or 'q'
 #   -1 when the user enters 'N' or 'n'
+# TODO make this a menu instead
 def confirmUserTagSelection():
-    user_answer = input('Do you want to use these tags? (Y/n/q): ')
+    user_answer = input('Do you want to use these tags? (Y/n/q/o): ')
     if user_answer.casefold() == 'n': # no
         return -1
     elif user_answer.casefold() == 'q': # quit
         return 1
+    elif user_answer.casefold() == 'o': # special case for now
+        return 2
     # else assume user accepts
     return 0
     
@@ -278,46 +345,71 @@ def confirmUserNoTagContinue(allow_retry):
     # else assume user quits
     return 1
     
-# function to display a tag selection/vewing menu to the user
-# EXIT NOTE: this function will exit the program if the user selects the
-#   quit option
-# @param cddb_data      - athe AlbumData class generated from parsing
-#   CDDB output
-# @param cd_text_data   - the AlbumData class generated from parsing
-#   CD-TEXT output
-# @returns the selected AlbumData class or None if none were selected
-def displayUserTagMenu(cddb_data, cd_text_data):
-    # preview cddb tags and prompt user
-    if cddb_data is not None:
-        print(TAGS_FOUND.format(NAME_CDDB))
-        cddb_data.printData()
-        user_select = confirmUserTagSelection()
-        if user_select > 0: # user wishes to quit
-            print(EXITING)
-            exit(1)
-        elif user_select == 0: # user selects these tags
-            return cddb_data
-        else:
-            print(TAGS_REFUSE)
-    else:
+# displays the premenu, notigyinf user what tags we found (if any)
+# @param cddb_data - AlbumData retrieved from CDDB
+# @param cd_text_data - AlbumData retrieved from CDTEXT
+# @returns the TagDisplayState we should start in
+def displayUserTagPreMenu(cddb_data, cd_text_data):
+    # by default, start in CDDB state
+    start_state = TagDisplayState.CDDB
+
+    if cddb_data is None:
         print(TAGS_NOT_FOUND.format(NAME_CDDB))
-            
-    # preview cd-text tags and prompt user
-    if cd_text_data is not None:
-        print(TAGS_FOUND.format(NAME_CD_TEXT))
-        cd_text_data.printData()
-        user_select = confirmUserTagSelection()
-        if user_select > 0: # user wishes to quit
-            print(EXITING)
-            exit(1)
-        elif user_select == 0: # user selects these tags
-            return cd_text_data
-        else:
-            print(TAGS_REFUSE)
+
+        # if no cddb_data, then default to CDTEXT state
+        start_state = TagDisplayState.CDTEXT
     else:
+        print(TAGS_FOUND.format(NAME_CDDB))
+
+    if cd_text_data is None:
         print(TAGS_NOT_FOUND.format(NAME_CD_TEXT))
-            
-    return None # user does not select any tags
+    else:
+        print(TAGS_FOUND.format(NAME_CD_TEXT))
+
+    if cddb_data is None and cd_text_data is None:
+        nothing = input(CUSTOM_TAG_PROMPT)
+
+        # if no cddb or cdtext, default to custom tags
+        start_state = TagDisplayState.CUSTOM
+    else:
+        nothing = input(PAUSE_SCREEN)
+
+    return start_state
+
+# displays user tag menu options and prompts user
+# @param curr_tag_name - name of the tags we want to display
+# @param curr_tags - Album of the current tags
+# @param switch_tag_name - name of the tags we want the switch option to
+#   display
+# @returns:
+#   a TagMainMenuOption enum
+# TODO change the menu options into a dict, so we can pick and choose which
+#   options to display
+def displayUserTagMenuOptions(
+        curr_tag_name,
+        curr_tags,
+        switch_tag_name):
+
+    done = False
+    while not done:
+        print(USER_TAG_MENU.format(curr_tag_name, str(curr_tags), switch_tag_name))
+
+        # get user input
+        user_selection = input(CHOOSE_MENU_OPTION).strip()
+        try:
+            # retrieve enum of user choice
+            user_choice = parseTagMainMenuOption(int(user_selection))
+
+            # if the user choice was invalid, better say something
+            if user_choice is TagMainMenuOption.INVALID:
+                print(INVALID_MENU_OPTION.format(user_selection))
+            else:
+                # otherwise we are done, so just return out of here
+                return user_choice
+
+        except:
+            print(INVALID_MENU_OPTION.format(user_selection))
+
 
 # function to check if the given cddb text matched, which means we have
 # tags.
@@ -383,37 +475,37 @@ def generateTags(text_in=None):
     tags_confirmed = False
     while not tags_confirmed:
         # display menu to prompt usr for tag selection
-        selected_tags = displayUserTagMenu(cddb_tags,cd_text_tags)
+        selected_tags = runUserTagMenu(cddb_tags,cd_text_tags)
         
         # if no tags are selected and no tags were found, prompt user if
         # they would like to continue program or quit.
         # if no tags are selected and tags were found, prompt user if 
         # they would like to retry selecting tags, continue program, or 
         # quit
-        user_answer = None
-        if selected_tags is None:
-            if cddb_tags is None and cd_text_tags is None:
-                user_answer = confirmUserNoTagContinue(False)
-            else:
-                user_answer = confirmUserNoTagContinue(True)
-        
-        if user_answer is not None and user_answer == 1: # user quits
-            print(EXITING)
-            exit(1)
-        elif user_answer is not None and user_answer == 2: 
-            # user wants to manuall enter tags
-            entered_tags = getEnteredTags()
-            print("\nEntered Tags:")
-            entered_tags.printData()
-            use_tags = input("\nUse these tags (y/N): ")
-            if use_tags.casefold() == 'y':
-                return entered_tags
-            else:
-                entered_tags.clear()
-
-        elif user_answer is None or user_answer == 0: 
+        # user_answer = None
+        # if selected_tags is None:
+        #    if cddb_tags is None and cd_text_tags is None:
+        #        user_answer = confirmUserNoTagContinue(False)
+        #    else:
+        #        user_answer = confirmUserNoTagContinue(True)
+       # 
+       # if user_answer is not None and user_answer == 1: # user quits
+       #     print(EXITING)
+       #     exit(1)
+       # elif user_answer is not None and user_answer == 2: 
+       #     # user wants to manuall enter tags
+       #     entered_tags = getEnteredTags()
+       #     print("\nEntered Tags:")
+       #     entered_tags.printData()
+       #     use_tags = input("\nUse these tags (y/N): ")
+       #     if use_tags.casefold() == 'y':
+       #         return entered_tags
+       #     else:
+       #         entered_tags.clear()
+#
+#        elif user_answer is None or user_answer == 0: 
             # user selected tags or wishes to continue
-            return selected_tags
+        return selected_tags
 
 
 # function that allows user to enter in tags
@@ -421,8 +513,11 @@ def generateTags(text_in=None):
 # if user wishes to abort this, just ctrl+C
 def getEnteredTags():
 
+    #clear screen
+    print(CLEAR_SCREEN)
+
     # an album
-    album = AlbumData()
+    album = AlbumData(NAME_CUSTOM)
 
     # first track count
     album.number_of_tracks = getTrackCount()
@@ -469,7 +564,7 @@ def getInput(prompt):
 # @param cddb_text  - cd-info's CDDB output
 # @returns an AlbumData built from the CDDB output
 def parseCDDB(cddb_text):
-    album = AlbumData()
+    album = AlbumData(NAME_CDDB)
     
     # begin parsing the individual parts
     # after parsing a part, we need the end index to begin search for
@@ -593,7 +688,7 @@ def parseCDDBTrackTitle(cddb_text, start=0):
 #   - if the CD-TEXT for Disc is missing PERFORMER, "UNKNOWN" will be
 #   used for the album artist.
 def parseCDTEXT(cd_text):
-    album = AlbumData()
+    album = AlbumData(NAME_CD_TEXT)
     
     # parsing album data
     disc_info = parseCDTEXTDisc(cd_text)
@@ -797,6 +892,99 @@ def parseCDTEXTTracks(cd_text, start=0, album_artist=None):
         track_artists,
         (not isEveryElementTheSame(track_artists))
     )
+
+# parsese the given TagMainMenuoption into an appropriate enum
+# assumes the given option is an int
+# @param choice - the choice we are checking
+# @returns the TagMainMenuOption enum that is appropriate
+def parseTagMainMenuOption(choice):
+    try:
+        # if the value is an appropriate enum, this will be successful
+        return TagMainMenuOption(choice)
+    except:
+        # otherwise just return the invalid choice
+        return TagMainMenuOption.INVALID
+
+# function to display a tag selection/vewing menu to the user
+# EXIT NOTE: this function will exit the program if the user selects the
+#   quit option
+# @param cddb_data      - athe AlbumData class generated from parsing
+#   CDDB output
+# @param cd_text_data   - the AlbumData class generated from parsing
+#   CD-TEXT output
+# @returns the selected AlbumData class or None if none were selected
+def runUserTagMenu(cddb_data, cd_text_data):
+
+    done = False
+    selected_tags = None
+    prev_state = None
+    custom_tags = None
+
+    state = displayUserTagPreMenu(cddb_data, cd_text_data)
+
+    # assume we have at least one tag to display at this point
+    while not done:
+
+        # display tag menu differntly based on state
+        if state is TagDisplayState.CDDB:
+            selected_tags = cddb_data
+            user_choice = (
+                displayUserTagMenuOptions(NAME_CDDB, selected_tags, 
+                    NAME_CD_TEXT)
+            )
+        elif state is TagDisplayState.CDTEXT:
+            selected_tags = cd_text_data
+            user_choice = (
+                displayUserTagMenuOptions(NAME_CD_TEXT, selected_tags,
+                    NAME_CDDB)
+            )
+        elif state is TagDisplayState.CUSTOM:
+            # TODO custom menu gets more options 
+            custom_tags = getEnteredTags()
+
+            selected_tags = custom_tags
+
+            # special logic to handle custom tags
+            if prev_state is TagDisplayState.CDTEXT:
+                prev_name = NAME_CD_TEXT
+            else:
+                prev_name = NAME_CDDB
+                prev_state = TagDisplayState.CDDB
+            user_choice = (
+                displayUserTagMenuOptions(NAME_CUSTOM, selected_tags,
+                    prev_name)
+            )
+
+        # now handle user choices
+        if user_choice is TagMainMenuOption.USE:
+            if selected_tags is None:
+                print(NO_EMPTY_TAGS)
+                nothing = input(PAUSE_SCREEN)
+            else:
+                return selected_tags
+
+        elif user_choice is TagMainMenuOption.SWITCH:
+            cust_state = prev_state
+            prev_state = state
+            if state is TagDisplayState.CDDB:
+                state = TagDisplayState.CDTEXT
+            elif state is TagDisplayState.CDTEXT:
+                state = TagDisplayState.CDDB
+            else:
+                state = cust_state
+
+        elif user_choice is TagMainMenuOption.CUSTOM:
+            prev_state = state
+            state = TagDisplayState.CUSTOM
+        elif user_choice is TagMainMenuOption.OPTION:
+            if selected_tags is not None:
+                applyArtistToAll(selected_tags.album_artist, selected_tags)
+        elif user_choice is TagMainMenuOption.QUIT:
+            done = True
+            print(EXITING)
+            exit(0)
+
+
 
 ### begin cd-info program flow  ========================================
 
