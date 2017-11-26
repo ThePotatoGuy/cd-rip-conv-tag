@@ -7,4 +7,4 @@ Programs called:
 
 This script will also check if those programs exist before executing. 
 
-This is only tested in a Linux environment (Arch Linux)
+This is only tested in a Linux environment (Arch Linux) on Python 3.4
