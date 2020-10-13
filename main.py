@@ -467,7 +467,10 @@ def generateTags(text_in=None):
     
     # check for cddb and cdtext and parse if they are found
     if hasCDDB(cddb_text):
-        cddb_tags = parseCDDB(cddb_text)
+        try:
+            cddb_tags = parseCDDB(cddb_text)
+        except Exception as e:
+            cddb_tags = None
     if cd_text_text:
         #print(cd_text_text)
         cd_text_tags = parseCDTEXT(cd_text_text)
