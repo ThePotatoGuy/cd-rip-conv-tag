@@ -1,7 +1,4 @@
 """
-@author Andre Allan Ponce
-@email andreponce@null.net
-
 python script that checks for a cd in the drive, rips it, converts
 the files to flac, writes the tags (if possible), and then deletes 
 the temporary wav files.
@@ -14,22 +11,24 @@ Programs called:
     cdparanoia
     ffmpeg
 
-This script will also check if those programs exist before executing 
+This script will also check if those programs exist before executing
+
+musicbrainz is checked for CDDB information.
 """
 
 import io
 import os
 import subprocess
 import tempfile
-from enum import IntEnum
-from enum import Enum
+
+import musicbrainzngs
 
 from album import AlbumData, TagMainMenuOption, TagDisplayState
+from musbra import disc_id_to_Album, EMAIL
 
 ### General constants   ================================================
 
 EXITING = 'Exiting...'
-EMAIL = 'andreponce@null.net'
 PARSE_OUTPUT_FAILED = '{0:s} did not produce the required output. \
     \nPlease send an email to '+EMAIL+' with the version number of \
     this program and the name and version number of {0:s}.'
@@ -151,6 +150,7 @@ CDDB_ALBUM_TITLE = 'Title:'
 CDDB_TRACK_ARTIST = 'artist:'
 CDDB_TRACK_TITLE = 'title:'
 CDDB_TRACK_BEGIN = 'Number of tracks:'
+CDDB_DISC_ID = "CDDB disc ID is "
 
 # CD-TEXT specific constants
 CD_TEXT_NAME = 'CD-TEXT'
@@ -487,6 +487,9 @@ def getInput(prompt):
 # @returns an AlbumData built from the CDDB output
 def parseCDDB(cddb_text):
     album = AlbumData(NAME_CDDB)
+
+    # get the CD ID
+    disc_id = parseCDDBKey(cddb_text, CDDB_DISC_ID)
     
     # begin parsing the individual parts
     # after parsing a part, we need the end index to begin search for

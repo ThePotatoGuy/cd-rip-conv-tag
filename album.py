@@ -1,6 +1,97 @@
+import re
+
+from typing import List, Tuple, Optional
+
+from enum import IntEnum
+from enum import Enum
+
+import discid
+
 ########################################################################
 ### CLASSES ############################################################
 ########################################################################
+
+
+class DiscData(object):
+    """
+    Contains disc data loaded from cd-info
+    """
+    first: int
+    last: int
+    lsns: List[int]
+    sectors: int
+
+    OFFSET = 150
+
+    TRACK_LIST_RX = re.compile(".+Track List \((\d+) - (\d+)\)\n")
+    TRACK_RX = re.compile("\s*\d+:\s*\d\d:\d\d:\d\d\s*(\d+).+\n")
+    TRACK_LEADOUT = re.compile("\s*\d+:\s*\d\d:\d\d:\d\d\s*(\d+)\s*leadout.*\n")
+
+    def __init__(self):
+        self.first = -1
+        self.last = -1
+        self.lsns = []
+        self.sectors = -1
+
+    def __len__(self):
+        return self.last - self.first + 1
+
+    def parse_track_list(self, data: str) -> Optional[re.Match]:
+        """
+        Attempts to find, then parses track data if we find it.
+        :param data: string to search for track list data
+        :return: the match object. If this boolean value is True, then the match was found, otherwise no match found
+        """
+        match = self.TRACK_LIST_RX.search(data)
+        if not match:
+            return match
+
+        # match found
+        first, last = match.groups()
+
+        # parse to ints
+        try:
+            self.first = int(first)
+            self.last = int(last)
+            return match
+
+        except:
+            return None
+
+    def parse_tracks(self, data: str, start_pos=0) -> Optional[int]:
+        """
+        Parses track data. Assumes parse_track_list has already been called
+        :param data: string to search for track data
+        :param start_pos: starting index to begin search
+        :return: ending index of data (match.end()), or NOne if match fails somewhere
+        """
+        if self.last < 1:
+            return None
+
+        last_dex = start_pos
+        for idx in range(self.first, self.last+1):
+            match = self.TRACK_RX.search(data, last_dex)
+            if match:
+                lsn = match.groups()[0]
+                try:
+                    self.lsns.append(int(lsn))
+                except:
+                    return None
+
+                last_dex = match.end()
+
+        if len(self.lsns) > 0:
+            # finally do the leadout check
+            match = self.TRACK_LEADOUT.search(data, last_dex)
+            if match:
+                try:
+                    self.sectors = int(match.groups()[0])
+                    return match.end()
+                except:
+                    return None
+
+        return None
+
 
 ## struct style object to hold album data
 class AlbumData:
