@@ -23,8 +23,8 @@ import tempfile
 
 import musicbrainzngs
 
-from album import AlbumData, TagMainMenuOption, TagDisplayState
-from musbra import disc_id_to_Album, EMAIL
+from album import AlbumData, TagMainMenuOption, TagDisplayState, DiscData
+from musbra import disc_id_to_Album, EMAIL, NAME_CDDB
 
 ### General constants   ================================================
 
@@ -115,12 +115,12 @@ CMD_CD_INFO_FLAG_NO_DISC_MODE = '--no-disc-mode'
 
 # cd-info keywords
 STDOUT_CD_INFO_CDDB_START = 'CD Analysis Report'
+STDOUT_CD_INFO_MBCDDB_START = "Disc mode is listed as: "
 
 # cd-info menu text
 TAGS_FOUND = '\n{:s} tags found\n'
 TAGS_NOT_FOUND = '\nNo {:s} tags found\n'
 TAGS_REFUSE = "Okay, I won\'t use these tags"
-NAME_CDDB = 'CDDB'
 NAME_CD_TEXT = 'CD-TEXT'
 NAME_CUSTOM = "CUSTOM"
 
@@ -366,30 +366,37 @@ def generateTags(text_in=None):
             ],
             stdout=subprocess.PIPE, 
             universal_newlines=True
-        ).stdout.partition(STDOUT_CD_INFO_CDDB_START)
+        ).stdout.partition(STDOUT_CD_INFO_MBCDDB_START)
     else: # use text_in as cd-info output
-        cd_info_report = text_in.partition(STDOUT_CD_INFO_CDDB_START)
-    
+        cd_info_report = text_in.partition(STDOUT_CD_INFO_MBCDDB_START)
+
+    # parse disc data
+    pfx, split, cd_tr_info = cd_info_report
+    disc_data, endex = DiscData.from_cd_info(cd_tr_info)
+
+    # split on CD Analyis
+    cd_info_report = (cd_tr_info[endex:]).partition(STDOUT_CD_INFO_CDDB_START)
+
     # exit program if CD Analysis report is missing from text
     if not cd_info_report[2]:
         print(PARSE_OUTPUT_FAILED.format(CMD_CD_INFO))
         exit(1)
-        
+
+
     # split the CD analysis report into CDDB and CD-TEXT
     cd_info_report_split = cd_info_report[2].partition('\n\n')
-    cddb_text = cd_info_report_split[0]
+    #cddb_text = cd_info_report_split[0]
     cd_text_text = cd_info_report_split[2]
     
     # initalize cddb and cdtext albumdata
     cddb_tags = None
     cd_text_tags = None
-    
-    # check for cddb and cdtext and parse if they are found
-    if hasCDDB(cddb_text):
-        try:
-            cddb_tags = parseCDDB(cddb_text)
-        except Exception as e:
-            cddb_tags = None
+
+    # try cddb
+    if disc_data is not None:
+        cddb_tags = disc_id_to_Album(disc_data.to_discid())
+
+    # now cd text
     if cd_text_text:
         #print(cd_text_text)
         cd_text_tags = parseCDTEXT(cd_text_text)

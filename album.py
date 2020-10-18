@@ -1,6 +1,6 @@
 import re
 
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Match
 
 from enum import IntEnum
 from enum import Enum
@@ -36,7 +36,27 @@ class DiscData(object):
     def __len__(self):
         return self.last - self.first + 1
 
-    def parse_track_list(self, data: str) -> Optional[re.Match]:
+    @staticmethod
+    def from_cd_info(cd_info: str) -> Tuple[Optional["DiscData"], int]:
+        """
+        Generates a disc data object from cd info string
+        :param cd_info: cd-info string
+        :return: tuple of the following format:
+            [0] - DiscData object, or None if failures
+            [1] - index where we stopped parsing string data.
+        """
+        data = DiscData()
+        start_match = data.parse_track_list(cd_info)
+        if start_match is None:
+            return None, 0
+
+        endex = data.parse_tracks(cd_info, start_pos=start_match.end())
+        if endex is None:
+            return None, start_match.end()
+
+        return data, endex
+
+    def parse_track_list(self, data: str) -> Optional[Match]:
         """
         Attempts to find, then parses track data if we find it.
         :param data: string to search for track list data
@@ -44,7 +64,7 @@ class DiscData(object):
         """
         match = self.TRACK_LIST_RX.search(data)
         if not match:
-            return match
+            return None
 
         # match found
         first, last = match.groups()
@@ -92,34 +112,53 @@ class DiscData(object):
 
         return None
 
+    def to_discid(self) -> str:
+        """
+        Converts this track data into a disc id for musicbrainz
+        :return: discid
+        """
+        return discid.put(
+            self.first,
+            self.last,
+            self.sectors + self.OFFSET,
+            [x + self.OFFSET for x in self.lsns]
+        )
+
 
 ## struct style object to hold album data
 class AlbumData:
+    def_album_artist = "Unknown"
+    def_album_title = "Untitled"
+
     # album data
-    album_artist = 'Unknown'
-    album_title = 'Untitled'
-    number_of_tracks = 0
+    album_artist: str
+    album_title: str
+    number_of_tracks: int
     
     # track data
-    track_names = list()
-    track_artists = list() # only used if has_multiple_artists is true
+    track_names: list
+    track_artists: list # only used if has_multiple_artists is true
     
     # boolean to say if this album has multiple artists or not
     # (i.e: different tracks have different artists (various artists)
-    has_multiple_artists = False
+    has_multiple_artists: bool
 
     # the source these tags were retrieved from 
-    tag_source = None
+    tag_source: str
+
+    # discid
+    disc_id: str
 
     # init
     def __init__(self, _tag_source):
-        self.album_artist = "Unknown"
-        self.album_title = "Untitled"
+        self.album_artist = self.def_album_artist
+        self.album_title = self.def_album_title
         self.number_of_tracks = 0
         self.track_artists = list()
         self.track_names = list()
         self.has_multiple_artists = False
         self.tag_source = _tag_source
+        self.disc_id = ""
 
     # converts this album to a string variant
     def __str__(self):
@@ -142,12 +181,35 @@ class AlbumData:
 
         return outString
 
+    def add_track(self, track_name: str, track_artist: str):
+        """
+        Adds a track to the track data list.
+        :param track_name: track name to add
+        :param track_artist: track artist to add. If empty, then we add album artist.
+        """
+        self.track_names.append(track_name)
+
+        if len(track_artist) < 1:
+            track_artist = self.album_artist
+        self.track_artists.append(track_artist)
 
     # function to print the data stored in this class in a nice format
     def printData(self):
         # print album
         print(str(self))
 
+    def check_multiple(self):
+        """
+        Checks for multiple artists
+        """
+        if len(self.track_artists) > 0:
+            c_artist = self.track_artists[0]
+            for artist in self.track_artists:
+                if artist != c_artist:
+                    self.has_multiple_artists = True
+                    return
+
+        self.has_multiple_artists = False
 
     # function to clear data
     def clear(self):
@@ -157,6 +219,7 @@ class AlbumData:
         self.track_artists = list()
         self.track_names = list()
         self.has_multiple_artists = False
+
 
 # enum for menu options
 class TagMainMenuOption(IntEnum):
