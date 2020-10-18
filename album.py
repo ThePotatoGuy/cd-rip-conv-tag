@@ -16,10 +16,10 @@ class DiscData(object):
     """
     Contains disc data loaded from cd-info
     """
-    first: int
-    last: int
-    lsns: List[int]
-    sectors: int
+    #first: int
+    #last: int
+    #lsns: List[int]
+    #sectors: int
 
     OFFSET = 150
 
@@ -131,23 +131,23 @@ class AlbumData:
     def_album_title = "Untitled"
 
     # album data
-    album_artist: str
-    album_title: str
-    number_of_tracks: int
+    #album_artist: str
+    #album_title: str
+    #number_of_tracks: int
     
     # track data
-    track_names: list
-    track_artists: list # only used if has_multiple_artists is true
+    #track_names: list
+    #track_artists: list # only used if has_multiple_artists is true
     
     # boolean to say if this album has multiple artists or not
     # (i.e: different tracks have different artists (various artists)
-    has_multiple_artists: bool
+    #has_multiple_artists: bool
 
     # the source these tags were retrieved from 
-    tag_source: str
+    #tag_source: str
 
     # discid
-    disc_id: str
+    #disc_id: str
 
     # init
     def __init__(self, _tag_source):
