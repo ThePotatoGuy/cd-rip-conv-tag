@@ -1,6 +1,8 @@
 
 from typing import Optional
 
+import traceback
+
 import musicbrainzngs
 
 from album import AlbumData
@@ -32,14 +34,19 @@ def disc_id_to_Album(disc_id: str) -> Optional[AlbumData]:
     :param disc_id: disc ID string
     :return: AlbumData object, may be None if failures occured
     """
-    releases = musicbrainzngs.get_releases_by_discid(
-        disc_id,
-        includes=["artists", "recordings", "artist-credits"]
-    ).get(
-        "disc", {}
-    ).get(
-        "release-list", []
-    )
+    try:
+        releases = musicbrainzngs.get_releases_by_discid(
+            disc_id,
+            includes=["artists", "recordings", "artist-credits"]
+        ).get(
+            "disc", {}
+        ).get(
+            "release-list", []
+        )
+    except Exception as e:
+        traceback.print_exc()
+        print("failed for disc id: {0}".format(disc_id))
+        return None
 
     if len(releases) < 1:
         return None

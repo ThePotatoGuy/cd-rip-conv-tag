@@ -115,7 +115,7 @@ CMD_CD_INFO_FLAG_NO_DISC_MODE = '--no-disc-mode'
 
 # cd-info keywords
 STDOUT_CD_INFO_CDDB_START = 'CD Analysis Report'
-STDOUT_CD_INFO_MBCDDB_START = "Disc mode is listed as: "
+STDOUT_CD_INFO_MBCDDB_START = "Disc mode is listed as:"
 
 # cd-info menu text
 TAGS_FOUND = '\n{:s} tags found\n'
@@ -361,14 +361,16 @@ def generateTags(text_in=None):
         cd_info_report = subprocess.run(
             [
                 CMD_CD_INFO,
-                CMD_CD_INFO_FLAG_NO_DEV_INFO,
-                CMD_CD_INFO_FLAG_NO_DISC_MODE
+#                CMD_CD_INFO_FLAG_NO_DEV_INFO,
+                #CMD_CD_INFO_FLAG_NO_DISC_MODE
             ],
             stdout=subprocess.PIPE, 
             universal_newlines=True
         ).stdout.partition(STDOUT_CD_INFO_MBCDDB_START)
     else: # use text_in as cd-info output
         cd_info_report = text_in.partition(STDOUT_CD_INFO_MBCDDB_START)
+
+    #print(cd_info_report[0])
 
     # parse disc data
     pfx, split, cd_tr_info = cd_info_report
@@ -381,7 +383,6 @@ def generateTags(text_in=None):
     if not cd_info_report[2]:
         print(PARSE_OUTPUT_FAILED.format(CMD_CD_INFO))
         exit(1)
-
 
     # split the CD analysis report into CDDB and CD-TEXT
     cd_info_report_split = cd_info_report[2].partition('\n\n')
@@ -396,10 +397,16 @@ def generateTags(text_in=None):
     if disc_data is not None:
         cddb_tags = disc_id_to_Album(disc_data.to_discid())
 
+        if cddb_tags is not None:
+            cddb_tags.clean()
+
     # now cd text
     if cd_text_text:
         #print(cd_text_text)
         cd_text_tags = parseCDTEXT(cd_text_text)
+
+        if cd_text_tags is not None:
+            cd_text_tags.clean()
         
     tags_confirmed = False
     while not tags_confirmed:
@@ -873,6 +880,7 @@ def runUserTagMenu(cddb_data, cd_text_data):
         elif state is TagDisplayState.CUSTOM:
             # TODO custom menu gets more options 
             custom_tags = getEnteredTags()
+            custom_tags.clean()
 
             selected_tags = custom_tags
 

@@ -7,6 +7,13 @@ from enum import Enum
 
 import discid
 
+def clean_str(text):
+    return text.replace("/", "(slash)").replace("<", "(lthan)").replace(
+            ">", "(gthan)").replace(":", "(colon)").replace(
+            '"', "(dubquote)").replace("\\", "(bslash)").replace(
+            "|", "(pipe)").replace("?", "(qmark)").replace(
+            "*", "(asterisk)")
+
 ########################################################################
 ### CLASSES ############################################################
 ########################################################################
@@ -117,12 +124,14 @@ class DiscData(object):
         Converts this track data into a disc id for musicbrainz
         :return: discid
         """
-        return discid.put(
-            self.first,
-            self.last,
-            self.sectors + self.OFFSET,
-            [x + self.OFFSET for x in self.lsns]
-        )
+        return discid.read().id
+        # NOTE: the below seems to create incorrect disc ids
+#        return discid.put(
+#            self.first,
+#            self.last,
+#            self.sectors + self.OFFSET,
+#            [x + self.OFFSET for x in self.lsns]
+#        )
 
 
 ## struct style object to hold album data
@@ -192,6 +201,17 @@ class AlbumData:
         if len(track_artist) < 1:
             track_artist = self.album_artist
         self.track_artists.append(track_artist)
+
+    def clean(self):
+        """
+        Cleans all tags so they are safe for file names.
+        """
+        self.album_artist = clean_str(self.album_artist)
+        self.album_title = clean_str(self.album_title)
+        for idx, artist in enumerate(self.track_artists):
+            self.track_artists[idx] = clean_str(artist)
+        for idx, name in enumerate(self.track_names):
+            self.track_names[idx] = clean_str(name)
 
     # function to print the data stored in this class in a nice format
     def printData(self):
